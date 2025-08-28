@@ -93,8 +93,8 @@ export type AppAction =
     | { type: 'ADD_SPECIAL_EFFECT'; payload: { effect: SpecialEffect } }
     | { type: 'REMOVE_SPECIAL_EFFECT'; payload: { id: number } }
     | { type: 'SHOW_TOASTY'; payload: boolean }
-    | { type: 'PLAYER_BANTER'; payload: { event: 'gameStart' | 'highCombo' | 'ability' | 'gameOverWin' | 'gameOverLoss', character: CharacterName, cooldownRef: MutableRefObject<any>} }
-    | { type: 'OPPONENT_BANTER'; payload: { event: 'taunt' | 'onDefeat'} }
+    | { type: 'PLAYER_BANTER'; payload: { event: 'gameStart' | 'highCombo' | 'ability' | 'gameOverWin' | 'gameOverLoss' | 'hit', character: CharacterName, cooldownRef: MutableRefObject<any>} }
+    | { type: 'OPPONENT_BANTER'; payload: { event: 'taunt' | 'onDefeat' | 'hit'} }
     | { type: 'TOGGLE_MUTE' }
     | { type: 'TOGGLE_SETTINGS_MODAL' }
     | { type: 'CLEAR_HINTS' }

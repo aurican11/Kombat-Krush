@@ -265,6 +265,7 @@
         color: #aaa;
         font-size: 0.9rem;
         margin-top: -0.5rem;
+        text-shadow: 1px 1px 2px #000;
       }
       .fighters-container {
         display: flex;
@@ -321,7 +322,7 @@
         padding-top: 10px;
         font-size: 1.1rem;
         line-height: 1.4;
-        text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.7);
+        text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.9);
       }
       .fighter-card:hover, .fighter-card:focus {
         transform: scale(1.05);
@@ -746,23 +747,93 @@
       @keyframes effect-dragon-fire-anim { from { transform: scale(0); opacity: 0.5; } to { transform: scale(1.5); opacity: 0; } }
       
       /* --- RESPONSIVE MOBILE LAYOUT --- */
-      .mobile-player-portrait, .mobile-opponent-portrait, .mobile-info-footer {
+      .mobile-header, .mobile-footer {
         display: none;
       }
+
       @media (max-width: 900px) {
         body {
-          --tile-size: min(11.5vmin, 50px);
+          --tile-size: min(12.3vw, 55px);
         }
         .game-ui-wrapper {
+          grid-template-columns: 1fr;
           display: flex;
           flex-direction: column;
-          grid-template-columns: 1fr;
+          align-items: center;
           padding: 5px;
           gap: 5px;
           height: 100dvh;
           max-height: 100dvh;
+          overflow: hidden;
         }
-        .player-info-col, .opponent-info-col { display: none; }
+
+        .player-info-col, .opponent-info-col {
+            display: none;
+        }
+        
+        .ability-tooltip {
+            left: 0;
+            transform: translateX(0);
+        }
+
+        .mobile-header {
+            display: flex;
+            width: 100%;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 0 5px;
+        }
+
+        .mobile-profile-item {
+            width: 48%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .mobile-header .player-portrait, 
+        .mobile-header .opponent-portrait {
+            width: clamp(70px, 18vw, 90px);
+            height: clamp(70px, 18vw, 90px);
+        }
+        .mobile-header .player-banter-bubble, 
+        .mobile-header .opponent-banter-bubble {
+            min-height: 5em;
+            font-size: 0.75rem;
+            padding: 5px;
+        }
+        
+        .mobile-footer {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            align-items: center;
+            width: 100%;
+            padding: 0 10px 5px;
+            margin-top: auto;
+            gap: 15px;
+        }
+        
+        .mobile-footer .opponent-attack-timer {
+            width: clamp(70px, 18vw, 80px);
+            height: clamp(70px, 18vw, 80px);
+            flex-shrink: 0;
+        }
+        .mobile-footer .attack-timer-label { font-size: 0.7rem; }
+        .mobile-footer .attack-timer-value { font-size: 1.8rem; }
+        
+        .mobile-footer .ladder-container {
+            flex-direction: row;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            gap: 5px;
+        }
+        .mobile-footer .ladder-portrait {
+            width: 35px;
+            height: 35px;
+        }
 
         .game-container {
           padding: 10px 5px;
@@ -770,8 +841,10 @@
           max-width: 100%;
           width: 100%;
           margin: 0;
+          height: auto;
           flex-grow: 1;
-          min-height: 0;
+          display: flex;
+          flex-direction: column;
         }
 
         .game-header {
@@ -779,42 +852,14 @@
           gap: 5px;
         }
         
-        .player-portrait-small {
-          width: 50px; height: 50px;
-          border-width: 2px;
-        }
-        .mobile-player-portrait, .mobile-opponent-portrait {
-          display: block;
-        }
         .health-bar-outer { height: 25px; }
 
         .controls-and-meters {
-          justify-content: space-around;
+          justify-content: space-between;
         }
         .ability-container {
-          flex-grow: 1;
-          align-items: flex-end;
-        }
-
-        .mobile-info-footer {
-          display: flex;
-          justify-content: space-around;
+          flex-grow: 0;
           align-items: center;
-          width: 100%;
-          margin-top: auto;
-          padding-top: 10px;
-        }
-        .mobile-info-footer .opponent-attack-timer {
-           width: 70px; height: 70px;
-        }
-        .mobile-info-footer .attack-timer-label { font-size: 0.7rem; }
-        .mobile-info-footer .attack-timer-value { font-size: 1.8rem; }
-        .mobile-info-footer .ladder-container {
-          flex-direction: row;
-          gap: 5px;
-        }
-        .mobile-info-footer .ladder-portrait {
-          width: 40px; height: 40px;
         }
       }
 
@@ -824,15 +869,6 @@
         }
         .health-bar-label {
           font-size: 0.8rem;
-        }
-        .mobile-info-footer .opponent-attack-timer {
-          width: 60px; height: 60px;
-        }
-         .mobile-info-footer .attack-timer-value {
-           font-size: 1.5rem;
-         }
-        .mobile-info-footer .ladder-portrait {
-          width: 35px; height: 35px;
         }
         .hint-button, .ability-button {
           font-size: 0.9rem;

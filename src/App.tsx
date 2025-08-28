@@ -1,5 +1,5 @@
 import React, { useEffect, useCallback, useRef, useReducer } from 'react';
-import { StartScreen, CharacterSelectScreen, EndGameModal, PlayerProfile, OpponentProfile, GameHeader, GameBoard, MobileFooter, SettingsModal } from './components';
+import { StartScreen, CharacterSelectScreen, EndGameModal, PlayerProfile, OpponentProfile, GameHeader, GameBoard, SettingsModal, MobileHeader, MobileFooter } from './components';
 import { playSound, createInitialBoard, processGameLoop } from './utils';
 import { LADDER_DATA, CHARACTER_DATA } from './constants';
 import type { CharacterName } from './types';
@@ -28,7 +28,7 @@ const App = () => {
         }
     }, [isMuted]);
 
-    const generatePlayerBanter = useCallback((event: 'gameStart' | 'highCombo' | 'ability' | 'gameOverWin' | 'gameOverLoss') => {
+    const generatePlayerBanter = useCallback((event: 'gameStart' | 'highCombo' | 'ability' | 'gameOverWin' | 'gameOverLoss' | 'hit') => {
         if (banterCooldownTimer.current || !selectedCharacter) return;
         dispatch({ type: 'PLAYER_BANTER', payload: { event, character: selectedCharacter, cooldownRef: banterCooldownTimer } });
     }, [selectedCharacter]);
@@ -81,6 +81,7 @@ const App = () => {
     useEffect(() => {
         if (playerIsHit) {
             playSoundMuted('playerHit');
+            generatePlayerBanter('hit');
             document.body.classList.add('screen-shake');
             const timer = setTimeout(() => {
                 document.body.classList.remove('screen-shake');
@@ -88,11 +89,12 @@ const App = () => {
             }, 400);
             return () => clearTimeout(timer);
         }
-    }, [playerIsHit, playSoundMuted]);
+    }, [playerIsHit, playSoundMuted, generatePlayerBanter]);
 
     useEffect(() => {
         if (opponentIsHit) {
             playSoundMuted('opponentHit');
+            dispatch({ type: 'OPPONENT_BANTER', payload: { event: 'hit' } });
             const timer = setTimeout(() => {
                 dispatch({ type: 'SET_OPPONENT_IS_HIT', payload: false });
             }, 400);
@@ -274,8 +276,6 @@ const App = () => {
             <SettingsModal
                 isOpen={showSettingsModal}
                 onClose={() => dispatch({ type: 'TOGGLE_SETTINGS_MODAL' })}
-                isMuted={isMuted}
-                onMuteToggle={() => dispatch({ type: 'TOGGLE_MUTE' })}
                 onMainMenu={handleGoToMainMenu}
             />
 
@@ -288,14 +288,20 @@ const App = () => {
 
                 <div className="game-container">
                     <h1 className="main-title">Kombat Krush</h1>
+                    <MobileHeader
+                        selectedCharacter={selectedCharacter}
+                        playerBanter={playerBanter}
+                        playerIsHit={playerIsHit}
+                        opponent={opponent}
+                        opponentBanter={opponentBanter}
+                        opponentIsHit={opponentIsHit}
+                    />
                     <GameHeader
                         playerHealth={playerHealth}
                         opponentHealth={opponentHealth}
                         opponentMaxHealth={opponent ? opponent.health : 100}
                         selectedCharacter={selectedCharacter}
                         opponentName={opponent?.name}
-                        playerIsHit={playerIsHit}
-                        opponentIsHit={opponentIsHit}
                         isHintOnCooldown={isHintOnCooldown}
                         hintCooldown={hintCooldown}
                         isProcessing={isProcessing}
@@ -328,18 +334,19 @@ const App = () => {
                         onPieceClick={handlePieceClick}
                         onSwipe={handleSwipe}
                     />
-                     <MobileFooter
-                        opponent={opponent}
-                        movesUntilAttack={movesUntilAttack}
-                        shuffledLadder={shuffledLadder}
-                        currentLadderLevel={currentLadderLevel}
-                    />
                 </div>
 
                 <OpponentProfile
                     opponent={opponent}
                     opponentBanter={opponentBanter}
                     opponentIsHit={opponentIsHit}
+                    movesUntilAttack={movesUntilAttack}
+                    shuffledLadder={shuffledLadder}
+                    currentLadderLevel={currentLadderLevel}
+                />
+                
+                <MobileFooter 
+                    opponent={opponent}
                     movesUntilAttack={movesUntilAttack}
                     shuffledLadder={shuffledLadder}
                     currentLadderLevel={currentLadderLevel}

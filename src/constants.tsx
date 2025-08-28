@@ -111,51 +111,57 @@ export const CHARACTER_DATA: {
 
 export const LOCAL_BANTER: { [key in CharacterName | 'opponent']: { [key: string]: string[] } } = {
     scorpion: {
-        gameStart: ["Vengeance will be mine!", "Get over here!", "I am the lord of the Netherrealm!"],
-        highCombo: ["Feel the sting of my spear!", "You cannot defeat me.", "Impressive... for a mortal."],
-        ability: ["To the Netherrealm!", "Burn!"],
+        gameStart: ["Vengeance will be mine!", "Get over here!", "I am the lord of the Netherrealm!", "You will taste the fires of hell!"],
+        highCombo: ["Feel the sting of my spear!", "You cannot defeat me.", "Impressive... for a mortal.", "Vengeance is a powerful weapon."],
+        ability: ["To the Netherrealm!", "Burn!", "Come here!"],
+        hit: ["You will suffer!", "A mere scratch.", "Feel my pain!"],
         gameOverWin: ["A worthy victory.", "The Shirai Ryu are avenged."],
         gameOverLoss: ["This is not over...", "You will pay for this."]
     },
     subzero: {
-        gameStart: ["This fight will be your last.", "For the Lin Kuei!", "You will feel the chill of death."],
-        highCombo: ["You are no match for the Grandmaster.", "Winter is coming.", "My power is absolute."],
-        ability: ["Freeze!", "Feel the cold."],
+        gameStart: ["This fight will be your last.", "For the Lin Kuei!", "You will feel the chill of death.", "I will shatter you."],
+        highCombo: ["You are no match for the Grandmaster.", "Winter is coming.", "My power is absolute.", "Your blood runs cold."],
+        ability: ["Freeze!", "Feel the cold.", "Absolute Zero!"],
+        hit: ["You will regret that.", "A cold response is coming.", "That felt... warm."],
         gameOverWin: ["The cold is a merciless ally.", "Justice is served."],
         gameOverLoss: ["I will return, stronger.", "A temporary setback."]
     },
     raiden: {
-        gameStart: ["I will consult with the Elder Gods.", "Earthrealm is under my protection.", "There are fates worse than death."],
-        highCombo: ["Thunder take you!", "By the gods!", "Your soul is stained."],
-        ability: ["Feel the power of lightning!", "For Earthrealm!"],
+        gameStart: ["I will consult with the Elder Gods.", "Earthrealm is under my protection.", "There are fates worse than death.", "Face the fury of the storm."],
+        highCombo: ["Thunder take you!", "By the gods!", "Your soul is stained.", "The heavens have judged you."],
+        ability: ["Feel the power of lightning!", "For Earthrealm!", "There is no escape from the storm."],
+        hit: ["The Elder Gods are displeased.", "A shocking development.", "You dare strike a god?"],
         gameOverWin: ["The tournament is won.", "A new day dawns for Earthrealm."],
         gameOverLoss: ["The future is in peril.", "I must not fail again."]
     },
     reptile: {
-        gameStart: ["For Zaterra!", "I will find my people.", "You will not see me coming."],
-        highCombo: ["My venom is potent.", "Clever girl...", "I am the last of my kind."],
-        ability: ["Acid Spit!", "Disappear..."],
+        gameStart: ["For Zaterra!", "I will find my people.", "You will not see me coming.", "My venom will find you."],
+        highCombo: ["My venom is potent.", "Clever girl...", "I am the last of my kind.", "Nowhere to run, nowhere to hide."],
+        ability: ["Acid Spit!", "Disappear...", "Melt away!"],
+        hit: ["Hsssss!", "My scales are strong.", "You'll pay for that!"],
         gameOverWin: ["My quest continues.", "Zaterra will rise again."],
         gameOverLoss: ["I am alone...", "My brood will be lost forever."]
     },
     kano: {
-        // FIX: Removed the 'name' property which was a string. The type for this object requires all property values to be string arrays.
-        gameStart: ["Let's have a little fun, eh?", "Time to get paid.", "Don't mess with the Black Dragon."],
-        highCombo: ["Beauty, ain't it?", "Right in the goolies!", "You're a bloody mess."],
-        ability: ["Kano Ball!", "Here comes the thunder from down under!"],
+        gameStart: ["Let's have a little fun, eh?", "Time to get paid.", "Don't mess with the Black Dragon.", "Time for a bit of the old ultra-violence."],
+        highCombo: ["Beauty, ain't it?", "Right in the goolies!", "You're a bloody mess.", "This is too easy!"],
+        ability: ["Kano Ball!", "Here comes the thunder from down under!", "Crikey!"],
+        hit: ["Oi, watch it!", "That's gonna leave a mark!", "You'll get yours, mate."],
         gameOverWin: ["Easy money.", "Always bet on black... Dragon."],
         gameOverLoss: ["Ripper!", "I've been robbed!"]
     },
     liukang: {
-        gameStart: ["The spirits of the Shaolin are with me.", "Show me what you can do.", "I fight for the honor of my ancestors."],
-        highCombo: ["Feel the heat of the dragon!", "A flawless technique.", "You lack discipline."],
-        ability: ["Dragon's Fire!", "For the Order of Light!"],
+        gameStart: ["The spirits of the Shaolin are with me.", "Show me what you can do.", "I fight for the honor of my ancestors.", "I am the chosen one."],
+        highCombo: ["Feel the heat of the dragon!", "A flawless technique.", "You lack discipline.", "The dragon's fury is unleashed."],
+        ability: ["Dragon's Fire!", "For the Order of Light!", "Hwoooo-a-ta!"],
+        hit: ["A poor strike.", "My focus is unbroken.", "You must try harder."],
         gameOverWin: ["The champion is victorious.", "Balance has been restored."],
         gameOverLoss: ["I have brought shame to the temple.", "I must train harder."]
     },
     opponent: {
-        taunt: ["Is that all you've got?", "Pathetic!", "My grandmother fights better than that.", "You're starting to bore me."],
-        onDefeat: ["This cannot be...", "I have been bested...", "You are strong... for now."],
-        idle: ["You face the might of Shao Kahn's champion!", "Prepare to die!", "Your soul will be mine."]
+        taunt: ["Is that all you've got?", "Pathetic!", "My grandmother fights better than that.", "You're starting to bore me.", "You fight like a child."],
+        onDefeat: ["This cannot be...", "I have been bested...", "You are strong... for now.", "Impossible..."],
+        idle: ["You face the might of Shao Kahn's champion!", "Prepare to die!", "Your soul will be mine.", "You are not worthy."],
+        hit: ["A lucky shot!", "Barely felt it.", "Is that the best you can do?", "I've had worse."]
     }
 }
