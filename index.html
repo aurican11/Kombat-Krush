@@ -48,10 +48,10 @@
         transition: background-image 0.4s ease-in;
       }
       
-      /* Darkened background for gameplay */
       body.gamestate-playing,
       body.gamestate-gameOver,
-      body.gamestate-testYourMight,
+      body.gamestate-levelWin,
+      body.gamestate-ladderComplete,
       body.gamestate-characterSelect {
         background-image: linear-gradient(0deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 100%), url('https://assets-prd.ignimgs.com/2021/02/18/mortal-kombat-ver2-button-1613673221799.jpg');
       }
@@ -60,23 +60,6 @@
         animation: screen-shake-animation 0.4s ease-out;
       }
       
-      body.finish-him-active::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        box-shadow: inset 0 0 100px 30px rgba(255, 0, 0, 0.6);
-        pointer-events: none;
-        z-index: 50;
-        animation: finish-him-vignette-pulse 1.5s infinite;
-      }
-
-      @keyframes finish-him-vignette-pulse {
-        50% { box-shadow: inset 0 0 120px 40px rgba(255, 0, 0, 0.8); }
-      }
-
       @keyframes screen-shake-animation {
         0%, 100% { transform: translateX(0); }
         10%, 30%, 50%, 70%, 90% { transform: translateX(-8px); }
@@ -95,16 +78,17 @@
         align-items: center;
         width: 100%;
         height: 100%;
-        justify-content: center;
+        justify-content: space-evenly;
         padding: 10px;
         position: relative;
+        gap: 20px;
       }
       .game-container {
         display: flex;
         flex-direction: column;
         align-items: center;
         gap: clamp(0.5rem, 2vw, 1rem);
-        padding: clamp(10px, 4vw, 20px);
+        padding: clamp(10px, 2vw, 15px);
         background-color: rgba(0,0,0,0.7);
         border: 2px solid #333;
         border-radius: 10px;
@@ -115,36 +99,16 @@
         flex-shrink: 0;
         transition: box-shadow 0.5s ease;
       }
-      .theme-scorpion .game-container { box-shadow: 0 0 20px #f8c838; }
-      .theme-subzero .game-container { box-shadow: 0 0 20px #38a8f8; }
-      .theme-raiden .game-container { box-shadow: 0 0 20px #d0d0d8; }
-
+      .theme-scorpion .game-container { box-shadow: 0 0 20px var(--scorpion-color); }
+      .theme-subzero .game-container { box-shadow: 0 0 20px var(--subzero-color); }
+      .theme-raiden .game-container { box-shadow: 0 0 20px var(--raiden-color); }
+      .theme-reptile .game-container { box-shadow: 0 0 20px var(--reptile-color); }
+      .theme-kano .game-container { box-shadow: 0 0 20px var(--kano-color); }
+      .theme-liukang .game-container { box-shadow: 0 0 20px var(--liukang-color); }
 
       .game-header {
         width: 100%;
         text-align: center;
-      }
-      .game-header h1 {
-        margin: 0 0 10px 0;
-        font-size: clamp(2rem, 8vw, 3rem);
-        color: #e53935;
-        text-shadow: 0 0 5px #fff, 0 0 10px #ff0000;
-      }
-      .game-stats {
-        display: flex;
-        justify-content: space-around;
-        align-items: center;
-        width: 100%;
-        font-size: clamp(1rem, 4vw, 1.2rem);
-        gap: 10px;
-        flex-wrap: wrap;
-        margin-bottom: 10px;
-      }
-      .game-stats .stat-item {
-        background: rgba(0,0,0,0.5);
-        padding: 5px clamp(10px, 3vw, 15px);
-        border-radius: 5px;
-        border: 1px solid #444;
       }
 
       .controls-and-meters {
@@ -153,7 +117,7 @@
         align-items: center;
         width: 100%;
         gap: 15px;
-        margin-bottom: 10px;
+        margin-top: 10px;
       }
 
       .header-buttons {
@@ -200,86 +164,7 @@
         height: 100%;
         filter: drop-shadow(0 0 2px black);
       }
-
-      .stat-item.finish-him {
-        color: #e53935;
-        font-weight: bold;
-        animation: finish-him-pulse 1.5s infinite;
-      }
       
-      @keyframes finish-him-pulse {
-        50% { 
-            transform: scale(1.1); 
-            text-shadow: 0 0 10px #ff0000; 
-        }
-      }
-
-      /* --- TYM Progress Bar --- */
-      .tym-progress-container {
-        width: 100%;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        margin-top: 10px;
-        font-size: 1.1rem;
-        color: #ccc;
-      }
-      .tym-progress-bar-outer {
-        flex-grow: 1;
-        height: 15px;
-        background-color: #222;
-        border: 2px solid #444;
-        border-radius: 8px;
-        padding: 2px;
-      }
-      .tym-progress-bar-inner {
-        height: 100%;
-        background: linear-gradient(90deg, #e53935, #f8c838);
-        border-radius: 4px;
-        transition: width 0.3s ease-in-out;
-      }
-
-      /* --- Mission Progress Bar --- */
-      .mission-container {
-        width: 100%;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 5px;
-        margin-top: 10px;
-        font-size: 1.1rem;
-        color: #b0e0e6; /* Powder Blue for a change */
-      }
-      .mission-description-container {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-      .mission-icon {
-        width: 24px;
-        height: 24px;
-      }
-      .mission-icon svg {
-        width: 100%;
-        height: 100%;
-        display: block;
-      }
-      .mission-progress-bar-outer {
-        width: 100%;
-        height: 15px;
-        background-color: #2a2a3a;
-        border: 2px solid #4a4a5a;
-        border-radius: 8px;
-        padding: 2px;
-      }
-      .mission-progress-bar-inner {
-        height: 100%;
-        background: linear-gradient(90deg, #38a8f8, #b0e0e6);
-        border-radius: 4px;
-        transition: width 0.3s ease-in-out;
-      }
-
-
       .game-board-container {
         position: relative;
         width: var(--board-size);
@@ -310,19 +195,21 @@
       }
       
       /* THEMES */
-      .theme-scorpion .game-board {
-        border-color: #f8c838;
-        background-image: url('https://i.imgur.com/uNymYtn.jpeg');
+      .theme-scorpion .game-board,
+      .theme-subzero .game-board,
+      .theme-raiden .game-board,
+      .theme-reptile .game-board,
+      .theme-kano .game-board,
+      .theme-liukang .game-board {
+        background-image: url('https://i.pinimg.com/736x/46/d1/72/46d17233c2190edb7efbfe27f588c8db.jpg');
       }
-       .theme-subzero .game-board {
-        border-color: #38a8f8;
-        background-image: url('https://i.imgur.com/wVjW3hX.jpeg');
-      }
-       .theme-raiden .game-board {
-        border-color: #d0d0d8;
-        background-image: url('https://i.imgur.com/4gW5bOx.jpeg');
-        animation: raiden-bg-flash 10s infinite;
-      }
+      .theme-scorpion .game-board { border-color: var(--scorpion-color); }
+      .theme-subzero .game-board { border-color: var(--subzero-color); }
+      .theme-raiden .game-board { border-color: var(--raiden-color); animation: raiden-bg-flash 10s infinite; }
+      .theme-reptile .game-board { border-color: var(--reptile-color); }
+      .theme-kano .game-board { border-color: var(--kano-color); }
+      .theme-liukang .game-board { border-color: var(--liukang-color); }
+
       @keyframes raiden-bg-flash {
         0%, 98% { filter: brightness(1); }
         98.5%, 99.5% { filter: brightness(2.5); }
@@ -365,7 +252,6 @@
       @keyframes aim-target-pulse {
         50% { box-shadow: 0 0 20px #f8c838; }
       }
-
 
       .game-piece.selected {
         background: linear-gradient(145deg, #5e5e5e, #3f3f3f);
@@ -467,16 +353,7 @@
         50% { box-shadow: inset 0 0 4px rgba(0,0,0,0.6), 0 2px 2px rgba(0,0,0,0.4), 0 0 20px #ff00ff, 0 0 30px #ff00ff; }
       }
 
-      .game-piece.special-hourglass {
-        animation: hourglass-pulse 1.2s infinite;
-      }
-
-      @keyframes hourglass-pulse {
-        0%, 100% { box-shadow: inset 0 0 4px rgba(0,0,0,0.6), 0 2px 2px rgba(0,0,0,0.4), 0 0 10px #f0e68c, 0 0 15px #f0e68c; }
-        50% { box-shadow: inset 0 0 4px rgba(0,0,0,0.6), 0 2px 2px rgba(0,0,0,0.4), 0 0 20px #f0e68c, 0 0 30px #f0e68c; }
-      }
-
-      .score-popup, .move-popup {
+      .damage-popup {
         position: absolute;
         font-size: 1.8rem;
         font-weight: bold;
@@ -486,40 +363,18 @@
         pointer-events: none;
         transform: translate(-50%, -50%);
         white-space: nowrap;
+        color: #e53935;
       }
-      .score-popup { color: #ffc107; }
-      .move-popup { color: #00ff00; font-size: 2rem; }
 
       @keyframes score-popup-animation {
         0% { transform: translate(-50%, -50%) scale(0.8); opacity: 1; }
         100% { transform: translate(-50%, -200%) scale(1.5); opacity: 0; }
       }
       
-      .mission-complete-popup {
-        position: absolute;
-        top: 40%;
-        left: 50%;
-        transform: translateX(-50%);
-        font-size: clamp(1.8rem, 7vw, 2.5rem);
-        font-weight: bold;
-        color: #38a8f8;
-        text-shadow: 0 0 5px #fff, 0 0 15px #38a8f8;
-        z-index: 15;
-        pointer-events: none;
-        white-space: nowrap;
-        animation: mission-complete-anim 2s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
-      }
-      @keyframes mission-complete-anim {
-        0% { transform: translateX(-50%) translateY(50px) scale(0.5); opacity: 0; }
-        30% { transform: translateX(-50%) translateY(0) scale(1.1); opacity: 1; }
-        70% { transform: translateX(-50%) translateY(0) scale(1); opacity: 1; }
-        100% { transform: translateX(-50%) translateY(-50px) scale(0.8); opacity: 0; }
-      }
-
       /* --- Combo Display --- */
       .combo-display {
         position: absolute;
-        top: clamp(2rem, 8vw, 3rem); /* Position below title */
+        bottom: 10px;
         left: 50%;
         font-size: clamp(2rem, 8vw, 3rem);
         font-weight: bold;
@@ -584,13 +439,6 @@
           from { transform: scale(1); opacity: 1; }
           to { transform: scale(10); opacity: 0; }
       }
-      .effect-hourglass {
-          width: 12.5%; height: 12.5%;
-          border-radius: 50%;
-          background: #f0e68c;
-          box-shadow: 0 0 20px #f0e68c, 0 0 40px #f0e68c;
-          animation: effect-dragon-anim 0.5s ease-out forwards; /* Can reuse dragon's for a radial burst */
-      }
       .effect-lightning {
         width: 25%;
         height: 25%;
@@ -639,6 +487,41 @@
       .effect-ice-shatter i:nth-child(5) { --angle: 240deg; --dist: 50px; }
       .effect-ice-shatter i:nth-child(6) { --angle: 300deg; --dist: 55px; animation-delay: 0.05s; }
 
+      .effect-acid-spit {
+          width: 12.5%; height: 100%;
+          background: linear-gradient(to bottom, var(--reptile-color) 0%, rgba(40, 160, 56, 0) 100%);
+          animation: effect-acid-drip-anim 0.8s ease-out forwards;
+          opacity: 0;
+      }
+      @keyframes effect-acid-drip-anim {
+          0% { transform: scaleY(0); opacity: 1; transform-origin: top; }
+          50% { transform: scaleY(1); opacity: 1; transform-origin: top; }
+          100% { transform: scaleY(1); opacity: 0; transform-origin: top; }
+      }
+      
+      .effect-kano-ball {
+          width: 100%; height: 12.5%;
+          background: radial-gradient(ellipse at center, rgba(255,255,255,0.8) 0%, var(--kano-color) 50%, rgba(208, 48, 40, 0) 100%);
+          animation: effect-kano-ball-anim 0.8s ease-out forwards;
+          opacity: 0;
+          border-radius: 50%;
+      }
+      @keyframes effect-kano-ball-anim {
+          0% { transform: translateX(-100%) scale(0.5) rotate(-360deg); opacity: 1; }
+          100% { transform: translateX(100%) scale(1) rotate(0deg); opacity: 1; }
+      }
+
+      .effect-dragon-fire {
+          width: 12.5%; height: 12.5%;
+          background: var(--liukang-color);
+          border-radius: 50%;
+          box-shadow: 0 0 10px var(--liukang-color), 0 0 20px #fff;
+          animation: effect-dragon-fire-anim 0.5s ease-out forwards;
+      }
+      @keyframes effect-dragon-fire-anim {
+        from { transform: scale(0); opacity: 0.5; }
+        to { transform: scale(1.5); opacity: 0; }
+      }
 
       /* --- Toasty --- */
       .toasty-container {
@@ -700,6 +583,7 @@
         animation: slide-in-from-top 0.5s ease-out;
         color: #ccc;
         max-width: 90vw;
+        width: 600px;
       }
       .game-over-modal p, .start-screen-modal p, .character-select-modal p {
         font-size: clamp(0.9rem, 3vw, 1.1rem);
@@ -716,13 +600,6 @@
         font-size: clamp(2rem, 8vw, 3rem);
       }
       
-      .start-screen-modal .high-score-display {
-        font-size: 1.5rem;
-        color: #f8c838;
-        margin-bottom: 1.5rem;
-      }
-      
-      /* --- Settings --- */
       .settings-container {
         margin: 1.5rem 0;
         display: flex;
@@ -767,18 +644,10 @@
         cursor: pointer;
       }
 
-
-      .new-high-score {
+      .victory-text {
+        font-size: clamp(2.5rem, 10vw, 4rem);
         color: #f8c838;
-        font-weight: bold;
-        animation: new-high-score-flash 1s infinite;
-      }
-
-      @keyframes new-high-score-flash {
-        50% {
-          transform: scale(1.1);
-          text-shadow: 0 0 10px #f8c838;
-        }
+        text-shadow: 0 0 10px #fff, 0 0 20px #f8c838;
       }
 
       .fatality-text {
@@ -791,24 +660,6 @@
         transform: scale(0.5);
         opacity: 0;
       }
-      
-      .brutality-text {
-        font-size: clamp(3rem, 12vw, 5rem);
-        color: #FFF;
-        text-shadow: 0 0 10px #e53935, 0 0 20px #e53935;
-        white-space: pre-line;
-        margin: 0 0 1rem;
-        animation: brutality-flicker 1.5s steps(1, end) forwards;
-      }
-      
-      @keyframes brutality-flicker {
-        0%, 12%, 23%, 35%, 45%, 55%, 68%, 78%, 90%, 100% {
-            opacity: 1; text-shadow: 0 0 10px #e53935, 0 0 20px #e53935, 0 0 5px #fff;
-        }
-        5%, 18%, 29%, 40%, 50%, 62%, 73%, 85%, 95% {
-            opacity: 0.6; text-shadow: none;
-        }
-      }
 
       @keyframes fatality-slam {
         0% { transform: scale(3) rotate(-10deg); opacity: 0; }
@@ -817,106 +668,6 @@
         100% { transform: scale(1) rotate(0); opacity: 1; }
       }
       
-      /* --- Test Your Might --- */
-      .test-your-might-overlay {
-        position: absolute;
-        top: 0; left: 0; right: 0; bottom: 0;
-        background-color: rgba(0, 0, 0, 0.9);
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        z-index: 20;
-        animation: fade-in 0.3s;
-      }
-      .test-your-might-modal {
-        color: #fff;
-        text-align: center;
-        width: 90%;
-        max-width: 400px;
-      }
-      .test-your-might-modal h2 {
-        font-size: clamp(2rem, 10vw, 3.5rem);
-        color: #e53935;
-        text-shadow: 0 0 10px #ff0000;
-        margin-bottom: 2rem;
-        animation: might-text-thump 4s linear infinite;
-      }
-      @keyframes might-text-thump {
-        0%, 100% { transform: scale(1); }
-        50% { transform: scale(1.05); }
-      }
-      .might-object {
-        width: 150px;
-        height: 100px;
-        background-color: #8B4513;
-        border: 4px solid #4d260a;
-        margin: 0 auto 1.5rem;
-        position: relative;
-        transition: transform 0.2s, background-color 0.2s;
-      }
-      .might-object.success { animation: might-break 0.5s forwards; }
-      @keyframes might-break {
-        0% { transform: translateY(0); }
-        50% { transform: translate(-10px, -20px) rotate(-15deg); }
-        100% { transform: translate(200px, 100px) rotate(45deg); opacity: 0; }
-      }
-      .power-bar-container {
-        width: 100%;
-        height: 40px;
-        background-color: #333;
-        border: 2px solid #555;
-        border-radius: 5px;
-        margin-bottom: 1.5rem;
-        position: relative;
-        overflow: hidden;
-      }
-      .power-bar {
-        height: 100%;
-        background: linear-gradient(90deg, #ffff00, #ffa500, #ff4500);
-        transition: width 0.1s linear;
-      }
-      .power-bar-target {
-        position: absolute;
-        top: 0;
-        left: 100%;
-        width: 5px;
-        height: 100%;
-        background-color: #fff;
-        box-shadow: 0 0 10px #fff;
-      }
-      .strike-button {
-        font-family: 'Metal Mania', cursive;
-        font-size: 2.5rem;
-        padding: 15px 30px;
-        background-color: #444;
-        border: 2px solid #ccc;
-        color: #fff;
-        border-radius: 10px;
-        cursor: pointer;
-        transition: all 0.1s;
-      }
-      .strike-button:active {
-        transform: scale(0.95);
-        background-color: #e53935;
-        border-color: #fff;
-      }
-      .strike-button:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-      }
-      .might-result {
-        font-size: 4rem;
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        opacity: 0;
-        transition: opacity 0.3s;
-        pointer-events: none;
-        text-shadow: 0 0 15px #fff;
-      }
-      .might-result.visible { opacity: 1; }
-
       .game-over-modal button, .start-screen-modal button, .character-select-modal button {
         font-family: 'Metal Mania', cursive;
         font-size: clamp(1.5rem, 6vw, 2rem);
@@ -945,7 +696,7 @@
       /* --- Character Select --- */
       .fighters-container {
         display: flex;
-        gap: clamp(15px, 4vw, 30px);
+        gap: clamp(10px, 2vw, 20px);
         margin-top: 2rem;
         flex-wrap: wrap;
         justify-content: center;
@@ -955,7 +706,7 @@
         border: 2px solid #555;
         border-radius: 10px;
         padding: 15px;
-        width: 150px;
+        width: clamp(150px, 25vw, 170px);
         cursor: pointer;
         transition: all 0.2s ease-in-out;
         margin: 0;
@@ -985,31 +736,51 @@
         background-image: url('https://i.pinimg.com/736x/00/98/9c/00989cbd8c7947663aca0ef8425ce690.jpg');
         background-position: top center;
       }
+      .fighter-card .char-portrait.reptile { 
+        background-image: url('https://i.pinimg.com/736x/4d/6b/fa/4d6bfaf8c9344f69c171d32cf007ec44.jpg'); 
+      }
+      .fighter-card .char-portrait.kano { 
+        background-image: url('https://i.pinimg.com/1200x/52/c9/f9/52c9f9606b42168b4c41c1d34321aef2.jpg'); 
+      }
+      .fighter-card .char-portrait.liukang {
+        background-image: url('https://i.pinimg.com/736x/3c/e9/a5/3ce9a59269ccf217971c85a787d44ef6.jpg');
+        background-position: top center;
+      }
+      
+      /* --- Fighting UI --- */
+      .player-info-col, .opponent-info-col {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 15px;
+        max-width: 200px;
+      }
+      @media (max-width: 900px) {
+        .player-info-col, .opponent-info-col { display: none; }
+      }
 
-      /* --- Player Character Display --- */
-      .player-container {
-        position: absolute;
-        left: calc(50% - 250px - 20px - 200px);
-        top: 50%;
-        transform: translateY(-50%);
-        width: 200px;
-        text-align: center;
-      }
-      @media (max-width: 850px) {
-        .player-container { display: none; }
-      }
-      .player-portrait {
+      .player-portrait, .opponent-portrait {
         width: 150px;
         height: 150px;
-        border-radius: 50%;
+        border-radius: 5px;
         border: 4px solid #ccc;
         background-color: #333;
-        margin: 0 auto;
         box-shadow: 0 0 15px #ccc;
         background-size: cover;
         background-position: center;
-        transition: border-color 0.5s ease, box-shadow 0.5s ease;
+        transition: border-color 0.5s ease, box-shadow 0.5s ease, transform 0.2s;
       }
+      
+      .player-portrait.taking-damage, .opponent-portrait.taking-damage {
+        animation: take-damage-shake 0.4s;
+      }
+      @keyframes take-damage-shake {
+        0%, 100% { transform: translateX(0); }
+        20%, 60% { transform: translateX(-8px) rotate(-3deg); }
+        40%, 80% { transform: translateX(8px) rotate(3deg); }
+      }
+      
       .theme-scorpion .player-portrait {
         border-color: var(--scorpion-color);
         box-shadow: 0 0 15px var(--scorpion-color);
@@ -1028,41 +799,115 @@
         background-image: url('https://i.pinimg.com/736x/00/98/9c/00989cbd8c7947663aca0ef8425ce690.jpg');
         background-position: top center;
       }
-      .player-banter-bubble {
-        margin-top: 15px;
+      .theme-reptile .player-portrait {
+        border-color: var(--reptile-color);
+        box-shadow: 0 0 15px var(--reptile-color);
+        background-image: url('https://i.pinimg.com/736x/4d/6b/fa/4d6bfaf8c9344f69c171d32cf007ec44.jpg');
+      }
+      .theme-kano .player-portrait {
+        border-color: var(--kano-color);
+        box-shadow: 0 0 15px var(--kano-color);
+        background-image: url('https://i.pinimg.com/1200x/52/c9/f9/52c9f9606b42168b4c41c1d34321aef2.jpg');
+      }
+      .theme-liukang .player-portrait {
+        border-color: var(--liukang-color);
+        box-shadow: 0 0 15px var(--liukang-color);
+        background-image: url('https://i.pinimg.com/736x/3c/e9/a5/3ce9a59269ccf217971c85a787d44ef6.jpg');
+        background-position: top center;
+      }
+
+      .opponent-portrait.reptile { background-image: url('https://i.pinimg.com/736x/4d/6b/fa/4d6bfaf8c9344f69c171d32cf007ec44.jpg'); border-color: var(--reptile-color); box-shadow: 0 0 15px var(--reptile-color); }
+      .opponent-portrait.kano { background-image: url('https://i.pinimg.com/1200x/52/c9/f9/52c9f9606b42168b4c41c1d34321aef2.jpg'); border-color: var(--kano-color); box-shadow: 0 0 15px var(--kano-color); }
+      .opponent-portrait.liukang { background-image: url('https://i.pinimg.com/736x/3c/e9/a5/3ce9a59269ccf217971c85a787d44ef6.jpg'); border-color: var(--liukang-color); box-shadow: 0 0 15px var(--liukang-color); background-position: top center;}
+      .opponent-portrait.scorpion { background-image: url('https://i.pinimg.com/736x/08/62/b8/0862b8e266e1673bc5cc39806345c63c.jpg'); border-color: var(--scorpion-color); box-shadow: 0 0 15px var(--scorpion-color); background-position: center 20%;}
+      .opponent-portrait.subzero { background-image: url('https://i.pinimg.com/736x/98/27/ee/9827ee697604aa5aac32398fae9c1afd.jpg'); border-color: var(--subzero-color); box-shadow: 0 0 15px var(--subzero-color); background-position: center 30%;}
+      .opponent-portrait.raiden { background-image: url('https://i.pinimg.com/736x/00/98/9c/00989cbd8c7947663aca0ef8425ce690.jpg'); border-color: var(--raiden-color); box-shadow: 0 0 15px var(--raiden-color); background-position: top center;}
+
+
+      .player-banter-bubble, .opponent-banter-bubble {
         background: #1a1a1a;
-        border: 2px solid #2e7d32;
+        border: 2px solid #ccc;
         border-radius: 10px;
         padding: 10px;
         position: relative;
         animation: banter-fade-in 0.5s;
         min-height: 5em;
+        width: 100%;
         transition: border-color 0.5s ease;
       }
-      .player-banter-bubble::before {
-        content: '';
-        position: absolute;
-        top: -10px;
-        left: 50%;
-        transform: translateX(-50%);
-        border-width: 0 8px 10px 8px;
-        border-style: solid;
-        border-color: transparent transparent #2e7d32 transparent;
-        transition: border-bottom-color 0.5s ease;
-      }
       .theme-scorpion .player-banter-bubble { border-color: var(--scorpion-color); }
-      .theme-scorpion .player-banter-bubble::before { border-bottom-color: var(--scorpion-color); }
-
       .theme-subzero .player-banter-bubble { border-color: var(--subzero-color); }
-      .theme-subzero .player-banter-bubble::before { border-bottom-color: var(--subzero-color); }
-      
       .theme-raiden .player-banter-bubble { border-color: var(--raiden-color); }
-      .theme-raiden .player-banter-bubble::before { border-bottom-color: var(--raiden-color); }
+      .theme-reptile .player-banter-bubble { border-color: var(--reptile-color); }
+      .theme-kano .player-banter-bubble { border-color: var(--kano-color); }
+      .theme-liukang .player-banter-bubble { border-color: var(--liukang-color); }
+      .opponent-banter-bubble { border-color: #e53935; }
 
       @keyframes banter-fade-in {
         from { opacity: 0; transform: translateY(10px); }
         to { opacity: 1; transform: translateY(0); }
       }
+
+      .opponent-attack-timer {
+        background-color: rgba(0,0,0,0.7);
+        border: 2px solid #e53935;
+        border-radius: 50%;
+        width: 100px;
+        height: 100px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 10px;
+        box-shadow: 0 0 10px #e53935;
+      }
+      .attack-timer-label { font-size: 1rem; color: #ccc; }
+      .attack-timer-value { font-size: 3rem; color: #fff; text-shadow: 0 0 5px #ff0000; }
+      
+      /* --- Health Bars --- */
+      .health-bars-container {
+        display: flex;
+        width: 100%;
+        gap: 10px;
+        padding: 5px;
+        background: #111;
+        border: 2px solid #333;
+        border-radius: 5px;
+      }
+      .health-bar-wrapper {
+        flex: 1;
+        position: relative;
+        text-align: center;
+      }
+      .health-bar-label {
+        font-size: 1.2rem;
+        color: #fff;
+        text-shadow: 1px 1px 2px #000;
+        position: absolute;
+        width: 100%;
+        z-index: 2;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        text-transform: uppercase;
+      }
+      .health-bar-outer {
+        height: 30px;
+        background-color: #333;
+        border: 2px solid #555;
+        border-radius: 5px;
+        padding: 2px;
+        position: relative;
+        overflow: hidden;
+      }
+      .health-bar-inner {
+        height: 100%;
+        border-radius: 2px;
+        transition: width 0.3s ease-out;
+      }
+      .health-bar-inner.player { background: linear-gradient(90deg, #1e88e5, #90caf9); }
+      .health-bar-inner.opponent { background: linear-gradient(270deg, #e53935, #ff8a80); }
+      
 
       /* --- Ability Meter --- */
       .ability-container {
@@ -1116,6 +961,9 @@
       .ability-container.scorpion .ability-meter-inner { background: var(--scorpion-color); }
       .ability-container.subzero .ability-meter-inner { background: var(--subzero-color); }
       .ability-container.raiden .ability-meter-inner { background: var(--raiden-color); }
+      .ability-container.reptile .ability-meter-inner { background: var(--reptile-color); }
+      .ability-container.kano .ability-meter-inner { background: var(--kano-color); }
+      .ability-container.liukang .ability-meter-inner { background: var(--liukang-color); }
     </style>
   </head>
   <body>
