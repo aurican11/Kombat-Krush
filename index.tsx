@@ -8,16 +8,17 @@ const ANIMATION_DELAY = 150; // ms for each step in the game loop
 const PLAYER_MAX_HEALTH = 100;
 const HINT_DELAY = 5000; // ms before showing a hint
 const HINT_COOLDOWN_SECONDS = 15;
-const ABILITY_METER_MAX = 25; // Pieces to match to fill meter
+const ABILITY_METER_MAX = 18; // Pieces to match to fill meter
+const FINISHER_HEALTH_THRESHOLD = 0.15; // 15% health
 
 // FIX: Explicitly type LADDER_DATA as Opponent[] to prevent TypeScript from inferring pieceType as a generic string.
 const LADDER_DATA: Opponent[] = [
-    { name: 'Reptile', health: 80, attack: 10, movesPerAttack: 5, pieceType: 'reptile' },
-    { name: 'Kano', health: 95, attack: 12, movesPerAttack: 5, pieceType: 'kano' },
-    { name: 'Liu Kang', health: 110, attack: 14, movesPerAttack: 4, pieceType: 'liukang' },
-    { name: 'Scorpion', health: 130, attack: 20, movesPerAttack: 4, pieceType: 'scorpion' },
-    { name: 'Sub-Zero', health: 130, attack: 20, movesPerAttack: 4, pieceType: 'subzero' },
-    { name: 'Raiden', health: 120, attack: 18, movesPerAttack: 4, pieceType: 'raiden' },
+    { name: 'Reptile', health: 90, attack: 12, movesPerAttack: 5, pieceType: 'reptile' },
+    { name: 'Kano', health: 110, attack: 15, movesPerAttack: 5, pieceType: 'kano' },
+    { name: 'Liu Kang', health: 130, attack: 18, movesPerAttack: 4, pieceType: 'liukang' },
+    { name: 'Scorpion', health: 150, attack: 24, movesPerAttack: 4, pieceType: 'scorpion' },
+    { name: 'Sub-Zero', health: 150, attack: 24, movesPerAttack: 4, pieceType: 'subzero' },
+    { name: 'Raiden', health: 140, attack: 22, movesPerAttack: 4, pieceType: 'raiden' },
 ];
 
 
@@ -25,9 +26,9 @@ const LADDER_DATA: Opponent[] = [
 type CharacterName = 'scorpion' | 'subzero' | 'raiden' | 'reptile' | 'kano' | 'liukang';
 type PieceType = CharacterName | null;
 type SpecialType = 'none' | 'row' | 'col' | 'dragon';
-type GameState = 'start' | 'characterSelect' | 'playing' | 'gameOver' | 'levelWin' | 'ladderComplete';
+type GameState = 'start' | 'characterSelect' | 'playing' | 'gameOver' | 'preGameOver' | 'levelWin' | 'ladderComplete';
 type AbilityState = 'idle' | 'ready' | 'aiming';
-type SpecialEffect = { id: number; type: SpecialType | 'lightning' | 'ice_shatter' | 'acid_spit' | 'kano_ball' | 'dragon_fire'; row: number; col: number; };
+type SpecialEffect = { id: number; type: SpecialType | 'lightning' | 'ice_shatter' | 'acid_spit' | 'kano_ball' | 'dragon_fire' | 'netherrealm_flame'; row: number; col: number; };
 
 interface Piece {
   id: number;
@@ -81,7 +82,7 @@ const PieceIcons: { [key in CharacterName]: React.FC } = {
 };
 
 const CHARACTER_DATA: { [key in CharacterName]: { name: string, description: string } } = {
-    scorpion: { name: 'Scorpion', description: 'Ability: Get Over Here! - Pull any piece to an adjacent spot.'},
+    scorpion: { name: 'Scorpion', description: 'Ability: Netherrealm Flames - Select a piece to destroy it and all others of the same type.'},
     subzero: { name: 'Sub-Zero', description: 'Ability: Ice Ball - Freeze and destroy a 4-piece cluster.' },
     raiden: { name: 'Raiden', description: 'Ability: Lightning Strike - Clear a random 2x2 area.' },
     reptile: { name: 'Reptile', description: 'Ability: Acid Spit - Clear a random column.' },
@@ -142,7 +143,7 @@ const LOCAL_BANTER: { [key in CharacterName | 'opponent']: { [event: string]: st
 
 // --- Audio Engine ---
 let audioContext: AudioContext | null = null;
-const playSound = (type: 'swap' | 'match' | 'specialCreate' | 'specialActivate' | 'gameOver' | 'toasty' | 'ability' | 'playerHit' | 'opponentHit', options?: { combo?: number, ability?: CharacterName }) => {
+const playSound = (type: 'swap' | 'match' | 'specialCreate' | 'specialActivate' | 'gameOver' | 'toasty' | 'ability' | 'playerHit' | 'opponentHit' | 'finishHim', options?: { combo?: number, ability?: CharacterName }) => {
     if (!audioContext) {
         try {
             audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -216,6 +217,25 @@ const playSound = (type: 'swap' | 'match' | 'specialCreate' | 'specialActivate' 
             gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 1.0);
             oscillator.start();
             oscillator.stop(audioContext.currentTime + 1.0);
+            break;
+        case 'finishHim':
+             const noise = audioContext.createBufferSource();
+             const bufferSize = audioContext.sampleRate * 2; // 2 seconds of noise
+             const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+             const data = buffer.getChannelData(0);
+             for (let i = 0; i < bufferSize; i++) {
+                 data[i] = Math.random() * 2 - 1;
+             }
+             noise.buffer = buffer;
+             const lowpass = audioContext.createBiquadFilter();
+             lowpass.type = 'lowpass';
+             lowpass.frequency.setValueAtTime(2000, audioContext.currentTime);
+             lowpass.frequency.exponentialRampToValueAtTime(100, audioContext.currentTime + 1.5);
+             noise.connect(lowpass).connect(gainNode);
+             gainNode.gain.setValueAtTime(0.5, audioContext.currentTime);
+             gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 2);
+             noise.start();
+             noise.stop(audioContext.currentTime + 2);
             break;
         case 'toasty':
             oscillator.type = 'sine';
@@ -328,6 +348,7 @@ const createInitialBoard = (idCounter: React.MutableRefObject<number>): Piece[][
 
 
 // --- React Components ---
+
 const GamePiece = memo(({ piece, onClick, isSelected, isHinted, isManualHinted, isCursorOn, onSwipe, isAiming, isAimTarget, swipeSensitivity }: { piece: Piece; onClick: () => void; isSelected: boolean, isHinted: boolean, isManualHinted: boolean, isCursorOn: boolean; onSwipe: (direction: 'up' | 'down' | 'left' | 'right') => void; isAiming: boolean; isAimTarget: boolean; swipeSensitivity: number; }) => {
     const touchStart = useRef<{ x: number, y: number } | null>(null);
     
@@ -386,6 +407,84 @@ const GamePiece = memo(({ piece, onClick, isSelected, isHinted, isManualHinted, 
     );
 });
 
+const EndGameModal = ({ gameState, opponent, maxCombo, onRestart, onNextLevel, brutality }: { gameState: GameState, opponent: Opponent | null, maxCombo: number, onRestart: () => void, onNextLevel: () => void, brutality?: boolean }) => {
+    if (!['levelWin', 'ladderComplete', 'gameOver'].includes(gameState)) {
+        return null;
+    }
+
+    return (
+        <div className="screen-overlay">
+            <div className={`modal-dialog ${gameState}`}>
+                 {gameState === 'ladderComplete' && <h2 className="victory-text perfect-victory-text">FLAWLESS VICTORY</h2>}
+                 {gameState === 'levelWin' && (brutality ? <h2 className="brutality-text">BRUTALITY</h2> : <h2 className="victory-text">YOU WIN</h2>)}
+                 {gameState === 'gameOver' && <h2 className='fatality-text'>FATALITY</h2>}
+
+                {gameState === 'ladderComplete' ? (
+                    <>
+                        <p>You have defeated all challengers and conquered the ladder!</p>
+                        <button onClick={onRestart}>Play Again</button>
+                    </>
+                ) : gameState === 'levelWin' ? (
+                    <>
+                        <p>You have defeated {opponent?.name}. Prepare for the next battle!</p>
+                        <button onClick={onNextLevel}>Next Fight</button>
+                    </>
+                ) : (
+                     <>
+                        <h3>You Lose</h3>
+                        <p>You were defeated by {opponent?.name}.</p>
+                        <p>Max Combo: x{maxCombo}</p>
+                        <button onClick={onRestart}>Try Again</button>
+                    </>
+                )}
+            </div>
+        </div>
+    );
+};
+
+const CharacterSelectScreen = ({ onStartGame }: { onStartGame: (character: CharacterName) => void }) => (
+    <div className="screen-overlay">
+        <div className="modal-dialog character-select">
+            <h2>Choose Your Fighter</h2>
+            <div className="fighters-container">
+                {(Object.keys(CHARACTER_DATA) as CharacterName[]).map(charKey => {
+                    const char = CHARACTER_DATA[charKey];
+                    return (
+                       <button key={char.name} className={`fighter-card ${charKey}`} onClick={() => onStartGame(charKey)}>
+                            <h3>{char.name}</h3>
+                            <div className={`char-portrait ${charKey}`}></div>
+                            <p>{char.description}</p>
+                       </button>
+                    )
+                })}
+            </div>
+        </div>
+    </div>
+);
+
+const StartScreen = ({ swipeSensitivity, onSensitivityChange, onStart }: { swipeSensitivity: number; onSensitivityChange: (e: React.ChangeEvent<HTMLInputElement>) => void; onStart: () => void; }) => (
+    <div className="screen-overlay">
+        <div className="modal-dialog">
+            <h1>Kombat Krush</h1>
+            <p>A Match-3 Fighting Game.</p>
+            <p>Match pieces to damage your opponent. Defeat 5 opponents to win the tournament!</p>
+            <div className="settings-container">
+                <label htmlFor="swipe-sensitivity">Swipe Sensitivity</label>
+                <input
+                    type="range"
+                    id="swipe-sensitivity"
+                    min="10"
+                    max="50"
+                    value={swipeSensitivity}
+                    onChange={onSensitivityChange}
+                />
+            </div>
+            <button onClick={onStart}>Start Game</button>
+        </div>
+    </div>
+);
+
+
 const App = () => {
     const [board, setBoard] = useState<Piece[][]>([]);
     const [gameState, setGameState] = useState<GameState>('start');
@@ -418,6 +517,9 @@ const App = () => {
     const [aimTarget, setAimTarget] = useState<{ row: number; col: number } | null>(null);
     const [playerBanter, setPlayerBanter] = useState<{key: number, text: string} | null>(null);
     const [swipeSensitivity, setSwipeSensitivity] = useState(() => Number(localStorage.getItem('kombatKrushSwipeSensitivity')) || 20);
+    const [isFinisherState, setIsFinisherState] = useState(false);
+    const [brutality, setBrutality] = useState(false);
+
 
     const pieceIdCounter = useRef(0);
     const popupIdCounter = useRef(0);
@@ -479,7 +581,10 @@ const App = () => {
 
     useEffect(() => {
         document.body.className = `gamestate-${gameState}`;
-    }, [gameState]);
+        if (selectedCharacter) {
+            document.body.classList.add(`theme-${selectedCharacter}`);
+        }
+    }, [gameState, selectedCharacter]);
 
     useEffect(() => {
         if (hintTimerId.current) clearTimeout(hintTimerId.current);
@@ -510,18 +615,27 @@ const App = () => {
             setAbilityState('ready');
         }
     }, [abilityMeter, abilityState]);
+    
+    const updateOpponentHealth = useCallback((newHealth: number) => {
+        const clampedHealth = Math.max(0, newHealth);
+        setOpponentHealth(clampedHealth);
+        if (opponent && clampedHealth > 0 && (clampedHealth / opponent.health) <= FINISHER_HEALTH_THRESHOLD) {
+            setIsFinisherState(true);
+        } else {
+            setIsFinisherState(false);
+        }
+    }, [opponent]);
+
 
     const startGame = useCallback((character: CharacterName) => {
         setSelectedCharacter(character);
 
-        // Create and shuffle the ladder
         const opponents = LADDER_DATA.filter(opp => opp.pieceType !== character);
-        // Fisher-Yates shuffle
         for (let i = opponents.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [opponents[i], opponents[j]] = [opponents[j], opponents[i]];
         }
-        setShuffledLadder(opponents);
+        setShuffledLadder(opponents.slice(0, 5)); // Limit ladder to 5 opponents
 
         setCurrentLadderLevel(0);
         const firstOpponent = opponents[0];
@@ -544,6 +658,8 @@ const App = () => {
         setAbilityMeter(0);
         setAbilityState('idle');
         setAimTarget(null);
+        setIsFinisherState(false);
+        setBrutality(false);
         setGameState('playing');
     }, []);
     
@@ -561,6 +677,8 @@ const App = () => {
             setOpponentHealth(nextOpponent.health);
             setMovesUntilAttack(nextOpponent.movesPerAttack);
             setBoard(createInitialBoard(pieceIdCounter));
+            setIsFinisherState(false);
+            setBrutality(false);
             setGameState('playing');
         } else {
             setGameState('ladderComplete');
@@ -712,8 +830,12 @@ const App = () => {
 
                 const totalDamage = Math.round((baseDamage + specialDamage) * comboCounter);
 
-                const newOpponentHealth = Math.max(0, opponentHealth - totalDamage);
-                setOpponentHealth(newOpponentHealth);
+                const isOverkill = opponentHealth > 0 && (opponentHealth - totalDamage) < 0;
+                const isFromSpecial = specialDamage > 0;
+                if (isOverkill && isFromSpecial) {
+                    setBrutality(true);
+                }
+                updateOpponentHealth(opponentHealth - totalDamage);
                 setOpponentIsHit(true);
                 setTimeout(() => setOpponentIsHit(false), 400);
                 playSoundMuted('opponentHit');
@@ -758,7 +880,6 @@ const App = () => {
                  setGameState('levelWin');
              }
         } else if (!hasPossibleMoves(boardCopy) && gameState === 'playing') {
-            // No moves left, reshuffle board
             await sleep(500);
             setBoard(createInitialBoard(pieceIdCounter));
         }
@@ -767,16 +888,19 @@ const App = () => {
             setIsProcessing(false);
         }
         return anyMatchesOccurred;
-    }, [setBoard, setCombo, setMaxCombo, playSoundMuted, combo, selectedCharacter, gameState, opponentHealth, currentLadderLevel, shuffledLadder, generateOpponentBanter]);
+    }, [setBoard, setCombo, setMaxCombo, playSoundMuted, combo, selectedCharacter, gameState, opponentHealth, currentLadderLevel, shuffledLadder, generateOpponentBanter, updateOpponentHealth]);
 
     const handleOpponentTurn = useCallback(() => {
-        if (isProcessing || gameState !== 'playing' || !opponent) return;
+        if (isProcessing || gameState !== 'playing' || !opponent) {
+            setIsProcessing(false);
+            return;
+        }
 
         const newMovesCounter = movesUntilAttack - 1;
         setMovesUntilAttack(newMovesCounter);
 
         if (newMovesCounter <= 0) {
-            setTimeout(() => { // Delay attack for visual clarity
+            setTimeout(() => {
                 generateOpponentBanter('taunt');
                 playSoundMuted('playerHit');
                 document.body.classList.add('screen-shake');
@@ -789,125 +913,150 @@ const App = () => {
                 setMovesUntilAttack(opponent.movesPerAttack);
 
                 if (newPlayerHealth <= 0) {
-                    playSoundMuted('gameOver');
-                    setGameState('gameOver');
+                    playSoundMuted('finishHim');
+                    setGameState('preGameOver');
+                    setTimeout(() => {
+                        setGameState('gameOver');
+                        playSoundMuted('gameOver');
+                    }, 3000);
+                } else {
+                    setIsProcessing(false);
                 }
-                setIsProcessing(false);
-
             }, 500);
 
         } else {
             setIsProcessing(false);
         }
     }, [isProcessing, gameState, opponent, movesUntilAttack, playerHealth, playSoundMuted, generateOpponentBanter]);
+    
+    // --- ABILITY LOGIC HELPERS ---
+    const useRaidenAbility = async (boardCopy: Piece[][]) => {
+        const startR = Math.floor(Math.random() * (GRID_SIZE - 1));
+        const startC = Math.floor(Math.random() * (GRID_SIZE - 1));
+        const effectId = Date.now();
+        setSpecialEffects(prev => [...prev, { id: effectId, type: 'lightning', row: startR, col: startC }]);
+        setTimeout(() => setSpecialEffects(prev => prev.filter(e => e.id !== effectId)), 600);
+        await sleep(ANIMATION_DELAY);
+        for (let r_offset = 0; r_offset < 2; r_offset++) {
+            for (let c_offset = 0; c_offset < 2; c_offset++) {
+                boardCopy[startR + r_offset][startC + c_offset].state = 'matched';
+            }
+        }
+        setBoard(boardCopy);
+        await sleep(ANIMATION_DELAY * 3);
+        for (let r_offset = 0; r_offset < 2; r_offset++) {
+            for (let c_offset = 0; c_offset < 2; c_offset++) {
+                boardCopy[startR + r_offset][startC + c_offset] = createPiece(startR + r_offset, startC + c_offset, null, pieceIdCounter, 'none');
+            }
+        }
+        return { boardResult: boardCopy, damage: 20 };
+    };
 
+    const useReptileAbility = async (boardCopy: Piece[][]) => {
+        const targetCol = Math.floor(Math.random() * GRID_SIZE);
+        const effectId = Date.now();
+        setSpecialEffects(prev => [...prev, { id: effectId, type: 'acid_spit', row: 0, col: targetCol }]);
+        setTimeout(() => setSpecialEffects(prev => prev.filter(e => e.id !== effectId)), 800);
+        await sleep(ANIMATION_DELAY);
+        for (let r = 0; r < GRID_SIZE; r++) { boardCopy[r][targetCol].state = 'matched'; }
+        setBoard(boardCopy);
+        await sleep(ANIMATION_DELAY * 3);
+        for (let r = 0; r < GRID_SIZE; r++) { boardCopy[r][targetCol] = createPiece(r, targetCol, null, pieceIdCounter, 'none'); }
+        return { boardResult: boardCopy, damage: 20 };
+    };
+    
+    const useKanoAbility = async (boardCopy: Piece[][]) => {
+        const targetRow = Math.floor(Math.random() * GRID_SIZE);
+        const effectId = Date.now();
+        setSpecialEffects(prev => [...prev, { id: effectId, type: 'kano_ball', row: targetRow, col: 0 }]);
+        setTimeout(() => setSpecialEffects(prev => prev.filter(e => e.id !== effectId)), 800);
+        await sleep(ANIMATION_DELAY);
+        for (let c = 0; c < GRID_SIZE; c++) { boardCopy[targetRow][c].state = 'matched'; }
+        setBoard(boardCopy);
+        await sleep(ANIMATION_DELAY * 3);
+        for (let c = 0; c < GRID_SIZE; c++) { boardCopy[targetRow][c] = createPiece(targetRow, c, null, pieceIdCounter, 'none'); }
+        return { boardResult: boardCopy, damage: 20 };
+    };
+
+    const useLiuKangAbility = async (boardCopy: Piece[][]) => {
+        const pieceTypesOnBoard = [...new Set(boardCopy.flat().map(p => p.type).filter((t): t is CharacterName => !!(t && t !== selectedCharacter)))];
+        if (pieceTypesOnBoard.length > 0) {
+            const typeToConvert = pieceTypesOnBoard[Math.floor(Math.random() * pieceTypesOnBoard.length)];
+            boardCopy.forEach((row, r) => {
+                row.forEach((piece, c) => {
+                    if (piece.type === typeToConvert) {
+                        boardCopy[r][c] = { ...piece, type: selectedCharacter };
+                        const effectId = Date.now() + Math.random();
+                        setSpecialEffects(prev => [...prev, { id: effectId, type: 'dragon_fire', row: r, col: c }]);
+                        setTimeout(() => setSpecialEffects(prev => prev.filter(e => e.id !== effectId)), 500);
+                    }
+                });
+            });
+        }
+        setBoard(boardCopy);
+        await sleep(ANIMATION_DELAY * 3);
+        return { boardResult: boardCopy, damage: 15 };
+    };
+    
     const handleAbilityClick = useCallback(async () => {
         if (abilityState !== 'ready' || isProcessing || !selectedCharacter) return;
-
-        // Aiming abilities are handled differently, they just set the state and don't consume the ability yet.
+    
         if (selectedCharacter === 'subzero' || selectedCharacter === 'scorpion') {
             setAbilityState('aiming');
             return;
         }
-
-        // For non-aiming abilities:
+    
         generatePlayerBanter("ability");
         playSoundMuted('ability', { ability: selectedCharacter });
         setIsProcessing(true);
         setAbilityMeter(0);
         setAbilityState('idle');
+    
+        let boardCopy = board.map(r => [...r]);
+        let result: { boardResult: Piece[][], damage: number } | null = null;
+        
+        try {
+            switch(selectedCharacter) {
+                case 'raiden':
+                    result = await useRaidenAbility(boardCopy);
+                    break;
+                case 'reptile':
+                    result = await useReptileAbility(boardCopy);
+                    break;
+                case 'kano':
+                    result = await useKanoAbility(boardCopy);
+                    break;
+                case 'liukang':
+                    result = await useLiuKangAbility(boardCopy);
+                    break;
+            }
+            
+            if (result) {
+                const isOverkill = opponentHealth > 0 && (opponentHealth - result.damage) < 0;
+                if (isOverkill) {
+                    setBrutality(true);
+                }
+                updateOpponentHealth(opponentHealth - result.damage);
+                await processGameLoop(result.boardResult);
+            }
+        } finally {
+            handleOpponentTurn();
+        }
+    }, [abilityState, isProcessing, selectedCharacter, board, processGameLoop, generatePlayerBanter, playSoundMuted, handleOpponentTurn, opponentHealth, updateOpponentHealth]);
+    
+    const executeAimedAbility = useCallback(async (row: number, col: number) => {
+        if (!selectedCharacter) return;
+        setIsProcessing(true);
+        generatePlayerBanter("ability");
 
         let boardCopy = board.map(r => [...r]);
-        let damage = 0;
+        let matchMade = false;
         
-        if (selectedCharacter === 'raiden') {
-            const startR = Math.floor(Math.random() * (GRID_SIZE - 1));
-            const startC = Math.floor(Math.random() * (GRID_SIZE - 1));
-            const effectId = Date.now();
-            setSpecialEffects(prev => [...prev, { id: effectId, type: 'lightning', row: startR, col: startC }]);
-            setTimeout(() => setSpecialEffects(prev => prev.filter(e => e.id !== effectId)), 600);
-            await sleep(ANIMATION_DELAY);
-            for (let r_offset = 0; r_offset < 2; r_offset++) {
-                for (let c_offset = 0; c_offset < 2; c_offset++) {
-                    const r = startR + r_offset;
-                    const c = startC + c_offset;
-                    boardCopy[r][c] = { ...boardCopy[r][c], state: 'matched' };
-                }
-            }
-            setBoard(boardCopy);
-            await sleep(ANIMATION_DELAY * 3);
-            for (let r_offset = 0; r_offset < 2; r_offset++) {
-                for (let c_offset = 0; c_offset < 2; c_offset++) {
-                    boardCopy[startR + r_offset][startC + c_offset] = createPiece(startR + r_offset, startC + c_offset, null, pieceIdCounter, 'none');
-                }
-            }
-            damage = 20;
-
-        } else if (selectedCharacter === 'reptile') {
-            const targetCol = Math.floor(Math.random() * GRID_SIZE);
-            const effectId = Date.now();
-            setSpecialEffects(prev => [...prev, { id: effectId, type: 'acid_spit', row: 0, col: targetCol }]);
-            setTimeout(() => setSpecialEffects(prev => prev.filter(e => e.id !== effectId)), 800);
-            await sleep(ANIMATION_DELAY);
-            for (let r = 0; r < GRID_SIZE; r++) { boardCopy[r][targetCol].state = 'matched'; }
-            setBoard(boardCopy);
-            await sleep(ANIMATION_DELAY * 3);
-            for (let r = 0; r < GRID_SIZE; r++) { boardCopy[r][targetCol] = createPiece(r, targetCol, null, pieceIdCounter, 'none'); }
-            damage = 20;
-
-        } else if (selectedCharacter === 'kano') {
-            const targetRow = Math.floor(Math.random() * GRID_SIZE);
-            const effectId = Date.now();
-            setSpecialEffects(prev => [...prev, { id: effectId, type: 'kano_ball', row: targetRow, col: 0 }]);
-            setTimeout(() => setSpecialEffects(prev => prev.filter(e => e.id !== effectId)), 800);
-            await sleep(ANIMATION_DELAY);
-            for (let c = 0; c < GRID_SIZE; c++) { boardCopy[targetRow][c].state = 'matched'; }
-            setBoard(boardCopy);
-            await sleep(ANIMATION_DELAY * 3);
-            for (let c = 0; c < GRID_SIZE; c++) { boardCopy[targetRow][c] = createPiece(targetRow, c, null, pieceIdCounter, 'none'); }
-            damage = 20;
-
-        } else if (selectedCharacter === 'liukang') {
-            const pieceTypesOnBoard = [...new Set(boardCopy.flat().map(p => p.type).filter((t): t is CharacterName => !!(t && t !== selectedCharacter)))];
-            if (pieceTypesOnBoard.length > 0) {
-                const typeToConvert = pieceTypesOnBoard[Math.floor(Math.random() * pieceTypesOnBoard.length)];
-                boardCopy.forEach((row, r) => {
-                    row.forEach((piece, c) => {
-                        if (piece.type === typeToConvert) {
-                            boardCopy[r][c] = { ...piece, type: selectedCharacter };
-                            const effectId = Date.now() + Math.random();
-                            setSpecialEffects(prev => [...prev, { id: effectId, type: 'dragon_fire', row: r, col: c }]);
-                            setTimeout(() => setSpecialEffects(prev => prev.filter(e => e.id !== effectId)), 500);
-                        }
-                    });
-                });
-            }
-            damage = 15;
-            setBoard(boardCopy);
-            await sleep(ANIMATION_DELAY * 3);
-        }
-        
-        setOpponentHealth(h => Math.max(0, h - damage));
-        await processGameLoop(boardCopy);
-        handleOpponentTurn();
-
-    }, [abilityState, isProcessing, selectedCharacter, board, processGameLoop, generatePlayerBanter, playSoundMuted, opponentHealth, handleOpponentTurn]);
-
-    const handlePieceClick = useCallback(async (row: number, col: number) => {
-        if (isProcessing || gameState !== 'playing') return;
-
-        if (hintTimerId.current) clearTimeout(hintTimerId.current);
-        setAutoHintIds(null);
-        setManualHintIds(null);
-
-        if (abilityState === 'aiming' && selectedCharacter) {
-            setIsProcessing(true);
-
+        try {
             if (selectedCharacter === 'subzero') {
                 setAbilityMeter(0);
                 setAbilityState('idle');
                 
-                let boardCopy = board.map(r => [...r]);
                 const targets = [{r: row, c: col}];
                 const neighbors = [
                     {r: row - 1, c: col}, {r: row + 1, c: col},
@@ -918,69 +1067,82 @@ const App = () => {
                     const randIndex = Math.floor(Math.random() * neighbors.length);
                     targets.push(neighbors.splice(randIndex, 1)[0]);
                 }
-
+    
                 targets.forEach(t => {
                     const effectId = Date.now() + Math.random();
                     setSpecialEffects(prev => [...prev, { id: effectId, type: 'ice_shatter', row: t.r, col: t.c }]);
                     setTimeout(() => setSpecialEffects(prev => prev.filter(e => e.id !== effectId)), 800);
                 });
-
+    
                 targets.forEach(t => boardCopy[t.r][t.c].state = 'frozen');
                 setBoard(boardCopy);
                 await sleep(ANIMATION_DELAY * 4);
-
+    
                 targets.forEach(t => {
                     boardCopy[t.r][t.c] = createPiece(t.r, t.c, null, pieceIdCounter, 'none');
                 });
                 
-                const damage = targets.length * 4; // Damage for each piece shattered
-                const newOpponentHealth = Math.max(0, opponentHealth - damage);
-                setOpponentHealth(newOpponentHealth);
-
-                await processGameLoop(boardCopy);
-                handleOpponentTurn();
-                return;
+                const damage = targets.length * 4;
+                const isOverkill = opponentHealth > 0 && (opponentHealth - damage) < 0;
+                if (isOverkill) {
+                    setBrutality(true);
+                }
+                updateOpponentHealth(opponentHealth - damage);
+                matchMade = await processGameLoop(boardCopy);
             }
-
+    
             if (selectedCharacter === 'scorpion') {
-                if (!aimTarget) {
-                    setAimTarget({ row, col });
+                setAbilityMeter(0);
+                setAbilityState('idle');
+
+                const targetType = boardCopy[row][col].type;
+                if (!targetType) {
                     setIsProcessing(false);
-                    return;
-                } else {
-                    const { row: r1, col: c1 } = aimTarget;
-                    const r2 = row, c2 = col;
-                    const distance = Math.abs(r1 - r2) + Math.abs(c1 - c2);
-
-                    setAimTarget(null);
-                    setAbilityMeter(0);
-                    setAbilityState('idle');
-
-                    if (distance === 1) {
-                        playSoundMuted('swap');
-                        let boardCopy = board.map(r => [...r]);
-                        [boardCopy[r1][c1], boardCopy[r2][c2]] = [boardCopy[r2][c2], boardCopy[r1][c1]];
-                        boardCopy[r1][c1] = {...boardCopy[r1][c1], row: r1, col: c1};
-                        boardCopy[r2][c2] = {...boardCopy[r2][c2], row: r2, col: c2};
-                        
-                        setBoard(boardCopy);
-                        await sleep(ANIMATION_DELAY * 2);
-                        const matchMade = await processGameLoop(boardCopy, {row: r2, col: c2});
-                        if (matchMade) {
-                            handleOpponentTurn();
-                        } else {
-                            // If swap didn't result in a match, it's an invalid move for this ability
-                            await sleep(ANIMATION_DELAY * 2);
-                            setBoard(board); // Revert board
-                            setIsProcessing(false);
-                        }
-
-                    } else { // Invalid target, refund ability
-                        setIsProcessing(false);
-                    }
+                    handleOpponentTurn();
                     return;
                 }
+                
+                const piecesToDestroy = boardCopy.flat().filter(p => p.type === targetType);
+
+                piecesToDestroy.forEach(p => {
+                    const effectId = Date.now() + Math.random();
+                    setSpecialEffects(prev => [...prev, { id: effectId, type: 'netherrealm_flame', row: p.row, col: p.col }]);
+                    setTimeout(() => setSpecialEffects(prev => prev.filter(e => e.id !== effectId)), 600);
+                    boardCopy[p.row][p.col].state = 'matched';
+                });
+                setBoard(boardCopy);
+                await sleep(ANIMATION_DELAY * 3);
+
+                piecesToDestroy.forEach(p => {
+                    boardCopy[p.row][p.col] = createPiece(p.row, p.col, null, pieceIdCounter, 'none');
+                });
+                
+                const damage = piecesToDestroy.length * 2.5; // Damage scales
+                const isOverkill = opponentHealth > 0 && (opponentHealth - damage) < 0;
+                if (isOverkill) {
+                    setBrutality(true);
+                }
+                updateOpponentHealth(opponentHealth - damage);
+                matchMade = await processGameLoop(boardCopy);
             }
+        } finally {
+            if (abilityState !== 'aiming') { 
+                handleOpponentTurn();
+            }
+        }
+    }, [board, selectedCharacter, abilityState, opponentHealth, processGameLoop, handleOpponentTurn, playSoundMuted, generatePlayerBanter, updateOpponentHealth]);
+
+
+    const handlePieceClick = useCallback(async (row: number, col: number) => {
+        if (isProcessing || gameState !== 'playing') return;
+
+        if (hintTimerId.current) clearTimeout(hintTimerId.current);
+        setAutoHintIds(null);
+        setManualHintIds(null);
+
+        if (abilityState === 'aiming') {
+            await executeAimedAbility(row, col);
+            return;
         }
         
         if (selectedPiece) {
@@ -990,28 +1152,32 @@ const App = () => {
             if (distance === 1) { 
                 setIsProcessing(true);
                 setSelectedPiece(null);
-                playSoundMuted('swap');
                 
-                const newBoard = board.map(r => [...r]);
-                const piece1 = newBoard[selectedRow][selectedCol];
-                const piece2 = newBoard[row][col];
-                
-                newBoard[selectedRow][selectedCol] = { ...piece2, row: selectedRow, col: selectedCol };
-                newBoard[row][col] = { ...piece1, row: row, col: col };
-                setBoard(newBoard);
-                
-                await sleep(ANIMATION_DELAY * 2);
-
-                const matches = findMatches(newBoard);
-
-                if (matches.length > 0) {
-                    const matchMade = await processGameLoop(newBoard, { row, col });
-                    if(matchMade) {
-                        handleOpponentTurn();
-                    }
-                } else {
+                try {
+                    playSoundMuted('swap');
+                    
+                    const newBoard = board.map(r => [...r]);
+                    const piece1 = newBoard[selectedRow][selectedCol];
+                    const piece2 = newBoard[row][col];
+                    
+                    newBoard[selectedRow][selectedCol] = { ...piece2, row: selectedRow, col: selectedCol };
+                    newBoard[row][col] = { ...piece1, row: row, col: col };
+                    setBoard(newBoard);
+                    
                     await sleep(ANIMATION_DELAY * 2);
-                    setBoard(board);
+
+                    const matchMade = await processGameLoop(newBoard, { row, col });
+
+                    if (matchMade) {
+                        handleOpponentTurn();
+                    } else {
+                        await sleep(ANIMATION_DELAY * 2);
+                        setBoard(board);
+                        setIsProcessing(false);
+                    }
+                } catch (error) {
+                    console.error("Error during piece swap:", error);
+                    setBoard(board); // Revert on error
                     setIsProcessing(false);
                 }
             } else {
@@ -1020,7 +1186,7 @@ const App = () => {
         } else {
             setSelectedPiece({ row, col });
         }
-    }, [selectedPiece, board, isProcessing, gameState, processGameLoop, playSoundMuted, abilityState, selectedCharacter, aimTarget, opponentHealth, handleOpponentTurn]);
+    }, [selectedPiece, board, isProcessing, gameState, processGameLoop, playSoundMuted, abilityState, handleOpponentTurn, executeAimedAbility]);
 
     const handleSwipe = useCallback((row: number, col: number, direction: 'up' | 'down' | 'left' | 'right') => {
         if (isProcessing || gameState !== 'playing' || selectedPiece || abilityState === 'aiming') return;
@@ -1035,6 +1201,7 @@ const App = () => {
 
         if (targetRow >= 0 && targetRow < GRID_SIZE && targetCol >= 0 && targetCol < GRID_SIZE) {
             setSelectedPiece({ row, col });
+            // Use a timeout to allow the state update to render before proceeding
             setTimeout(() => handlePieceClick(targetRow, targetCol), 0);
         }
     }, [isProcessing, gameState, selectedPiece, handlePieceClick, abilityState]);
@@ -1104,96 +1271,49 @@ const App = () => {
     }, [handleKeyDown]);
     
 
+    if (gameState === 'start') {
+        return <StartScreen 
+            swipeSensitivity={swipeSensitivity} 
+            onSensitivityChange={handleSensitivityChange} 
+            onStart={() => setGameState('characterSelect')} 
+        />;
+    }
+
+    if (gameState === 'characterSelect') {
+        return <CharacterSelectScreen onStartGame={startGame} />;
+    }
+
     return (
         <>
-            {gameState === 'start' && (
-                <div className="start-screen-overlay">
-                    <div className="start-screen-modal">
-                        <h1>Kombat Krush</h1>
-                        <p>A Match-3 Fighting Game.</p>
-                        <p>Match pieces to damage your opponent. Defeat the ladder to win!</p>
-                        <div className="settings-container">
-                            <label htmlFor="swipe-sensitivity">Swipe Sensitivity</label>
-                            <input
-                                type="range"
-                                id="swipe-sensitivity"
-                                min="10"
-                                max="50"
-                                value={swipeSensitivity}
-                                onChange={handleSensitivityChange}
-                            />
-                        </div>
-                        <button onClick={() => setGameState('characterSelect')}>Start Game</button>
-                    </div>
-                </div>
-            )}
-            
-            {gameState === 'characterSelect' && (
-                <div className="character-select-overlay">
-                    <div className="character-select-modal">
-                        <h2>Choose Your Fighter</h2>
-                        <div className="fighters-container">
-                            {(Object.keys(CHARACTER_DATA) as CharacterName[]).map(charKey => {
-                                const char = CHARACTER_DATA[charKey];
-                                return (
-                                   <button key={char.name} className="fighter-card" onClick={() => startGame(charKey)}>
-                                        <h3>{char.name}</h3>
-                                        <div className={`char-portrait ${charKey}`}></div>
-                                        <p>{char.description}</p>
-                                   </button>
-                                )
-                            })}
-                        </div>
-                    </div>
-                </div>
-            )}
-            
-            {(gameState === 'levelWin' || gameState === 'ladderComplete') && (
-                <div className="game-over-overlay">
-                    <div className="game-over-modal">
-                        <h2 className="victory-text">
-                            {gameState === 'ladderComplete' ? 'FLAWLESS VICTORY' : 'YOU WIN'}
-                        </h2>
-                        {gameState === 'ladderComplete' ? (
-                            <>
-                                <p>You have defeated all challengers and conquered the ladder!</p>
-                                <button onClick={handleRestartClick}>Play Again</button>
-                            </>
-                        ) : (
-                            <>
-                                <p>You have defeated {opponent?.name}. Prepare for the next battle!</p>
-                                <button onClick={handleNextLevel}>Next Fight</button>
-                            </>
-                        )}
-                    </div>
+            <EndGameModal 
+                gameState={gameState} 
+                opponent={opponent} 
+                maxCombo={maxCombo} 
+                onRestart={handleRestartClick} 
+                onNextLevel={handleNextLevel} 
+                brutality={brutality}
+            />
+
+            {gameState === 'preGameOver' && (
+                <div className="pre-game-over-overlay">
+                    <div className="finish-him-text">Finish Him!</div>
                 </div>
             )}
 
 
-            {gameState === 'gameOver' && (
-                <div className="game-over-overlay">
-                    <div className="game-over-modal">
-                        <h2 className='fatality-text'>FATALITY</h2>
-                        <h3>You Lose</h3>
-                        <p>You were defeated by {opponent?.name}.</p>
-                        <p>Max Combo: x{maxCombo}</p>
-                        <button onClick={handleRestartClick}>Try Again</button>
-                    </div>
-                </div>
-            )}
-
-            <div className={`game-ui-wrapper ${selectedCharacter ? `theme-${selectedCharacter}` : ''}`} aria-hidden={!['playing', 'gameOver', 'levelWin', 'ladderComplete'].includes(gameState)}>
+            <div className="game-ui-wrapper" aria-hidden={!['playing', 'preGameOver'].includes(gameState)}>
                 <div className="player-info-col">
-                    <div className={`player-portrait ${selectedCharacter || ''} ${playerIsHit ? 'taking-damage' : ''}`}></div>
-                    {playerBanter && (
-                        <div key={playerBanter.key} className="player-banter-bubble">
-                            {`"${playerBanter.text}"`}
+                    <div className="character-header">
+                        <div key={playerBanter?.key || 'player-banter-static'} className="player-banter-bubble" aria-live="polite">
+                            {playerBanter ? `"${playerBanter.text}"` : ''}
                         </div>
-                    )}
+                        <div className={`player-portrait ${selectedCharacter || ''} ${playerIsHit ? 'taking-damage' : ''}`}></div>
+                    </div>
                 </div>
 
                 <div className="game-container">
                     <header className="game-header">
+                        <div className={`mobile-player-portrait player-portrait-small ${selectedCharacter || ''} ${playerIsHit ? 'taking-damage' : ''}`}></div>
                         <div className="health-bars-container">
                             <div className="health-bar-wrapper">
                                 <div className="health-bar-label">{selectedCharacter}</div>
@@ -1208,6 +1328,8 @@ const App = () => {
                                 </div>
                             </div>
                         </div>
+                         <div className={`mobile-opponent-portrait player-portrait-small ${opponent?.pieceType || ''} ${opponentIsHit ? 'taking-damage' : ''}`}></div>
+
 
                         <div className="controls-and-meters">
                             <div className="header-buttons">
@@ -1239,7 +1361,8 @@ const App = () => {
                             COMBO x{combo}
                         </div>
                     )}
-
+                    
+                    {isFinisherState && <div className="finisher-text">Finish Him!</div>}
                     <div className="game-board-container">
                         <div className="game-board">
                             {specialEffects.map(effect => (
@@ -1251,6 +1374,7 @@ const App = () => {
                                     effect.type === 'acid_spit' ? 'effect-acid-spit' :
                                     effect.type === 'kano_ball' ? 'effect-kano-ball' :
                                     effect.type === 'dragon_fire' ? 'effect-dragon-fire' :
+                                    effect.type === 'netherrealm_flame' ? 'effect-netherrealm-flame' :
                                     effect.type === 'ice_shatter' ? 'effect-ice-shatter' : ''
                                 }`} style={{ top: `${effect.row * 12.5}%`, left: `${effect.col * 12.5}%` }}>
                                     {effect.type === 'ice_shatter' && Array.from({ length: 6 }).map((_, i) => <i key={i} />)}
@@ -1290,21 +1414,49 @@ const App = () => {
                             </div>
                         )}
                     </div>
+                     <div className="mobile-info-footer">
+                        {opponent && (
+                            <div className="opponent-attack-timer">
+                                <div className="attack-timer-label">ATTACK IN</div>
+                                <div className="attack-timer-value">{movesUntilAttack}</div>
+                            </div>
+                        )}
+                         <div className="ladder-container">
+                            {shuffledLadder.map((opp, index) => (
+                                <div
+                                    key={opp.pieceType}
+                                    className={`ladder-portrait ${opp.pieceType} ${
+                                        index < currentLadderLevel ? 'defeated' : ''
+                                    } ${index === currentLadderLevel ? 'current' : ''}`}
+                                />
+                            ))}
+                        </div>
+                    </div>
                 </div>
 
                 <div className="opponent-info-col">
                     {opponent && (
                         <>
-                        <div className={`opponent-portrait ${opponent.pieceType || ''} ${opponentIsHit ? 'taking-damage' : ''}`}></div>
+                        <div className="character-header">
+                            <div key={opponentBanter?.key || 'opponent-banter-static'} className="opponent-banter-bubble" aria-live="polite">
+                                {opponentBanter ? `"${opponentBanter.text}"` : ''}
+                            </div>
+                            <div className={`opponent-portrait ${opponent.pieceType || ''} ${opponentIsHit ? 'taking-damage' : ''}`}></div>
+                        </div>
                         <div className="opponent-attack-timer">
                             <div className="attack-timer-label">ATTACK IN</div>
                             <div className="attack-timer-value">{movesUntilAttack}</div>
                         </div>
-                        {opponentBanter && (
-                            <div key={opponentBanter.key} className="opponent-banter-bubble">
-                                {`"${opponentBanter.text}"`}
-                            </div>
-                        )}
+                        <div className="ladder-container">
+                            {shuffledLadder.map((opp, index) => (
+                                <div
+                                    key={opp.pieceType}
+                                    className={`ladder-portrait ${opp.pieceType} ${
+                                        index < currentLadderLevel ? 'defeated' : ''
+                                    } ${index === currentLadderLevel ? 'current' : ''}`}
+                                />
+                            ))}
+                        </div>
                         </>
                     )}
                 </div>
