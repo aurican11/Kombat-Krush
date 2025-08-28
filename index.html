@@ -195,19 +195,6 @@
         text-shadow: 0 0 10px #fff, 0 0 20px var(--scorpion-color);
       }
       
-      .brutality-text {
-        font-size: clamp(3rem, 12vw, 5rem);
-        color: #B71C1C; /* Darker red */
-        text-shadow: 0 0 5px #ffcdd2, 0 0 15px var(--fatality-color);
-        animation: brutality-shake 0.8s cubic-bezier(.36,.07,.19,.97) both;
-      }
-      @keyframes brutality-shake {
-        10%, 90% { transform: translate3d(-1px, 0, 0) scale(1.02); }
-        20%, 80% { transform: translate3d(2px, 0, 0) scale(0.98); }
-        30%, 50%, 70% { transform: translate3d(-4px, 0, 0) scale(1.05); }
-        40%, 60% { transform: translate3d(4px, 0, 0) scale(0.95); }
-      }
-
       .fatality-text {
         font-size: clamp(3rem, 12vw, 5rem);
         color: var(--fatality-color);
@@ -226,87 +213,42 @@
         100% { transform: scale(1) rotate(0); opacity: 1; }
       }
       
-      /* FINISH HIM OVERLAY */
-      .pre-game-over-overlay {
-          position: fixed; z-index: 99; top:0; left:0; right:0; bottom:0;
-          background: radial-gradient(circle, rgba(100,0,0,0.6) 0%, rgba(20,0,0,0.95) 80%);
-          display: flex; justify-content: center; align-items: center;
-          animation: pre-game-over-fade-in 0.5s;
-      }
-      .finish-him-text {
-          font-size: clamp(4rem, 20vw, 8rem);
-          color: var(--fatality-color);
-          text-shadow: 0 0 10px #fff, 0 0 40px #ff0000;
-          animation: finish-him-zoom 3s forwards;
-      }
-      @keyframes pre-game-over-fade-in { 
-        from { opacity: 0; }
-        to { opacity: 1; }
-      }
-      @keyframes finish-him-zoom { 
-        0% { transform: scale(0.5); opacity: 0; } 
-        10% { transform: scale(1.1); opacity: 1; } 
-        20% { transform: scale(1); } 
-        80% { transform: scale(1); opacity: 1; } 
-        100% { transform: scale(3); opacity: 0; } 
-      }
-
-      /* --- START SCREEN --- */
-      .settings-container {
-        margin: 1.5rem 0;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 0.5rem;
-      }
-      .settings-container label {
-        font-size: 1.2rem;
-      }
-      input[type="range"] {
-        -webkit-appearance: none; appearance: none;
-        width: 80%;
-        max-width: 250px;
-        height: 8px;
-        background: #444;
-        border-radius: 5px;
-        outline: none;
-        opacity: 0.7;
-        transition: opacity .2s;
-      }
-      input[type="range"]:hover { opacity: 1; }
-      input[type="range"]::-webkit-slider-thumb {
-        -webkit-appearance: none; appearance: none;
-        width: 20px; height: 20px;
-        background: var(--fatality-color);
-        border: 2px solid #fff;
-        border-radius: 50%;
-        cursor: pointer;
-      }
-      input[type="range"]::-moz-range-thumb {
-        width: 20px; height: 20px;
-        background: var(--fatality-color);
-        border: 2px solid #fff;
-        border-radius: 50%;
-        cursor: pointer;
-      }
-
       /* --- CHARACTER SELECT --- */
+      .modal-dialog.character-select {
+        max-width: 90vw;
+        width: 850px;
+      }
       .modal-dialog.character-select h2 {
         color: #eee;
       }
+      .scroll-hint {
+        color: #888;
+        font-size: 0.9rem;
+        margin-top: -0.5rem;
+      }
       .fighters-container {
         display: flex;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        justify-content: flex-start;
         gap: clamp(10px, 2vw, 20px);
-        margin-top: 2rem;
-        flex-wrap: wrap;
-        justify-content: center;
+        margin-top: 1rem;
+        padding: 1rem 0;
+        scrollbar-width: none; /* Firefox */
+        -webkit-mask-image: linear-gradient(to right, transparent, black 20px, black calc(100% - 20px), transparent);
+        mask-image: linear-gradient(to right, transparent, black 20px, black calc(100% - 20px), transparent);
+      }
+      .fighters-container::-webkit-scrollbar {
+        display: none; /* Safari & Chrome */
       }
       .fighter-card {
         background-color: #222;
         border: 2px solid #555;
         border-radius: 10px;
         padding: 15px;
-        width: clamp(150px, 25vw, 170px);
+        width: clamp(150px, 20vw, 170px);
+        flex-shrink: 0;
         cursor: pointer;
         transition: all 0.2s ease-in-out;
         margin: 0;
@@ -368,8 +310,16 @@
         width: 100%;
         max-width: 500px;
         transition: box-shadow 0.5s ease;
-        margin-top: 50px; /* Adjust to vertically center */
       }
+      .main-title {
+        font-size: clamp(2.5rem, 8vw, 3.5rem);
+        margin: 0 0 0.5rem;
+        color: var(--fatality-color);
+        text-shadow: 0 0 5px #fff, 0 0 10px #ff0000;
+        text-align: center;
+        line-height: 1;
+      }
+
       .theme-scorpion .game-container { box-shadow: 0 0 20px var(--scorpion-color); }
       .theme-subzero .game-container { box-shadow: 0 0 20px var(--subzero-color); }
       .theme-raiden .game-container { box-shadow: 0 0 20px var(--raiden-color); }
@@ -397,6 +347,10 @@
       .game-header {
         width: 100%;
         text-align: center;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px;
       }
       .controls-and-meters {
         display: flex;
@@ -405,7 +359,6 @@
         align-items: center;
         width: 100%;
         gap: 15px;
-        margin-top: 10px;
       }
       .header-buttons {
         display: flex;
@@ -413,7 +366,7 @@
         gap: 10px;
       }
       
-      .hint-button, .mute-button, .ability-button {
+      .hint-button, .mute-button, .ability-button, .fatality-button {
         font-family: 'Metal Mania', cursive;
         background: #4a4a4a;
         border: 1px solid #777;
@@ -421,7 +374,7 @@
         border-radius: 5px;
         padding: 5px 10px;
         cursor: pointer;
-        transition: background-color 0.2s, opacity 0.2s, color 0.2s, border-color 0.2s;
+        transition: all 0.2s;
       }
       .hint-button {
         font-size: 1rem;
@@ -450,6 +403,7 @@
         border: 2px solid #333;
         border-radius: 5px;
         flex-grow: 1;
+        order: 1;
       }
       .health-bar-wrapper { flex: 1; position: relative; text-align: center; }
       .health-bar-label {
@@ -469,7 +423,7 @@
       .health-bar-inner.player { background: linear-gradient(90deg, #1e88e5, #90caf9); }
       .health-bar-inner.opponent { background: linear-gradient(270deg, var(--fatality-color), #ff8a80); }
 
-      /* --- ABILITY METER --- */
+      /* --- ABILITY & FATALITY METERS --- */
       .ability-container { display: flex; flex-direction: column; align-items: center; gap: 5px; }
       .ability-button { font-size: 1rem; background: #333; color: #999; cursor: not-allowed; min-width: 70px; }
       .ability-button.ready {
@@ -490,6 +444,54 @@
       .ability-container.kano .ability-meter-inner { background: var(--kano-color); }
       .ability-container.liukang .ability-meter-inner { background: var(--liukang-color); }
       
+      .fatality-meter-container {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 5px;
+        order: 2;
+      }
+      .fatality-meter-outer {
+        height: 15px;
+        width: 100%;
+        background-color: #111;
+        border: 2px solid #555;
+        border-radius: 5px;
+        padding: 2px;
+        box-shadow: inset 0 0 5px #000;
+      }
+      .fatality-meter-inner {
+        height: 100%;
+        background: linear-gradient(90deg, #6a0000, var(--fatality-color));
+        border-radius: 2px;
+        transition: width 0.3s ease-in-out;
+        box-shadow: 0 0 8px var(--fatality-color);
+      }
+      .fatality-button {
+        font-size: 1.1rem;
+        padding: 5px 15px;
+        background: #333;
+        color: #777;
+        border-color: #555;
+        cursor: not-allowed;
+      }
+      .fatality-button.ready {
+        background-color: var(--fatality-color);
+        color: #fff;
+        border-color: #fff;
+        cursor: pointer;
+        text-shadow: 0 0 5px #fff;
+        box-shadow: 0 0 15px var(--fatality-color);
+        animation: fatality-ready-pulse 1.2s infinite;
+      }
+       @keyframes fatality-ready-pulse { 
+         50% { 
+           transform: scale(1.05);
+           box-shadow: 0 0 25px var(--fatality-color), 0 0 10px #fff; 
+         } 
+       }
+
       /* --- PLAYER & OPPONENT INFO --- */
       .player-portrait, .opponent-portrait {
         width: clamp(100px, 15vw, 150px);
@@ -521,9 +523,9 @@
       .opponent-portrait.subzero { background-image: url('https://i.pinimg.com/736x/98/27/ee/9827ee697604aa5aac32398fae9c1afd.jpg'); border-color: var(--subzero-color); box-shadow: 0 0 15px var(--subzero-color); background-position: center 30%;}
       .opponent-portrait.raiden { background-image: url('https://i.pinimg.com/736x/00/98/9c/00989cbd8c7947663aca0ef8425ce690.jpg'); border-color: var(--raiden-color); box-shadow: 0 0 15px var(--raiden-color); background-position: top center;}
 
-      .player-banter-bubble, .opponent-banter-bubble { background: #1a1a1a; border: 2px solid #ccc; border-radius: 10px; padding: 10px; position: relative; animation: banter-fade-in 0.5s; min-height: 5em; width: 100%; transition: border-color 0.5s ease, background-color 0.5s ease; display: flex; align-items: center; justify-content: center; text-align: center; }
+      .player-banter-bubble, .opponent-banter-bubble { background: #1a1a1a; border: 2px solid #444; border-radius: 10px; padding: 10px; position: relative; animation: banter-fade-in 0.5s; min-height: 5em; width: 100%; transition: border-color 0.5s ease, background-color 0.5s ease; display: flex; align-items: center; justify-content: center; text-align: center; }
       @keyframes banter-fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-      .player-banter-bubble:empty, .opponent-banter-bubble:empty { border-color: transparent; background: transparent; }
+
       .theme-scorpion .player-banter-bubble { border-color: var(--scorpion-color); }
       .theme-subzero .player-banter-bubble { border-color: var(--subzero-color); }
       .theme-raiden .player-banter-bubble { border-color: var(--raiden-color); }
@@ -571,20 +573,6 @@
       .theme-kano .game-board { border-color: var(--kano-color); }
       .theme-liukang .game-board { border-color: var(--liukang-color); }
       
-      .game-container .finisher-text {
-        position: relative;
-        text-align: center;
-        margin-bottom: -5px;
-        margin-top: 5px;
-        font-size: clamp(2rem, 8vw, 3rem);
-        color: var(--fatality-color);
-        text-shadow: 0 0 5px #fff, 0 0 10px #ff0000;
-        z-index: 15;
-        pointer-events: none;
-        animation: finisher-text-fade 2s infinite ease-in-out;
-      }
-      @keyframes finisher-text-fade { 50% { opacity: 0.7; } }
-
       .game-piece {
         position: absolute;
         width: 12.5%; height: 12.5%;
@@ -633,6 +621,14 @@
         0% { transform: scale(1); }
         50% { transform: scale(1.1); filter: brightness(1.5); box-shadow: inset 0 0 10px var(--subzero-color); }
         100% { transform: scale(0) rotate(360deg); opacity: 0; }
+      }
+      .game-piece.fatality {
+        animation: fatality-piece-explode 1.5s cubic-bezier(0.68, -0.55, 0.27, 1.55) forwards;
+      }
+      @keyframes fatality-piece-explode {
+        0% { transform: scale(1) rotate(0); opacity: 1; filter: brightness(1); }
+        50% { transform: scale(1.5) rotate(180deg); opacity: 1; filter: brightness(5) drop-shadow(0 0 15px var(--fatality-color)); }
+        100% { transform: scale(0) rotate(360deg); opacity: 0; filter: brightness(1); }
       }
 
       /* Special Piece Indicators */
@@ -720,15 +716,12 @@
           padding: 10px 5px;
           gap: 10px;
           max-width: 100%;
-          margin-top: 0;
+          margin: 0;
         }
 
         .game-header {
-          display: flex;
-          flex-wrap: wrap;
           align-items: center;
           gap: 5px;
-          justify-content: center;
         }
         
         .player-portrait-small {
@@ -737,11 +730,11 @@
         }
         .mobile-player-portrait, .mobile-opponent-portrait {
           display: block;
+          order: 0;
         }
         .health-bar-outer { height: 25px; }
 
         .controls-and-meters {
-          margin-top: 5px;
           order: 3; /* Move to bottom of header */
         }
         .ability-container {
@@ -767,6 +760,30 @@
         }
         .mobile-info-footer .ladder-portrait {
           width: 40px; height: 40px;
+        }
+      }
+
+      @media (max-width: 400px) {
+        .main-title {
+          font-size: 2rem;
+        }
+        .health-bar-label {
+          font-size: 0.8rem;
+        }
+        .mobile-info-footer .opponent-attack-timer {
+          width: 60px; height: 60px;
+        }
+         .mobile-info-footer .attack-timer-value {
+           font-size: 1.5rem;
+         }
+        .mobile-info-footer .ladder-portrait {
+          width: 35px; height: 35px;
+        }
+        .fatality-button {
+          font-size: 1rem;
+        }
+        .hint-button, .ability-button {
+          font-size: 0.9rem;
         }
       }
     </style>
