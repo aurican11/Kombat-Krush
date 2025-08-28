@@ -34,6 +34,25 @@ const App = () => {
     }, [selectedCharacter]);
 
     useEffect(() => {
+        const handleKeyDown = () => {
+            document.body.classList.add('using-keyboard');
+        };
+        const handlePointerDown = () => {
+            document.body.classList.remove('using-keyboard');
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        window.addEventListener('mousedown', handlePointerDown);
+        window.addEventListener('touchstart', handlePointerDown);
+
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+            window.removeEventListener('mousedown', handlePointerDown);
+            window.removeEventListener('touchstart', handlePointerDown);
+        };
+    }, []);
+
+    useEffect(() => {
         if (gameState === 'playing' && selectedCharacter) {
              generatePlayerBanter("gameStart");
         } else if (gameState === 'gameOver') {

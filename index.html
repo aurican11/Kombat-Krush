@@ -46,7 +46,7 @@
         min-height: 100dvh;
         touch-action: none;
         
-        background-image: url('https://images2.alphacoders.com/573/thumb-1920-573197.jpg');
+        background-image: url('https://cdna.artstation.com/p/assets/images/images/003/714/696/large/pawel-kot-mk2-hd-armory.jpg?1476740914');
         background-size: cover;
         background-position: center;
         transition: background-image 0.4s ease-in;
@@ -259,9 +259,11 @@
       }
       .modal-dialog.character-select h2 {
         color: #eee;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+        letter-spacing: 1px;
       }
       .scroll-hint {
-        color: #888;
+        color: #aaa;
         font-size: 0.9rem;
         margin-top: -0.5rem;
       }
@@ -318,7 +320,9 @@
       .fighter-card p {
         margin-top: auto;
         padding-top: 10px;
-        font-size: 0.9rem;
+        font-size: 1.1rem;
+        line-height: 1.4;
+        text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.7);
       }
       .fighter-card:hover, .fighter-card:focus {
         transform: scale(1.05);
@@ -327,6 +331,7 @@
       .fighter-card h3 {
         margin: 0 0 10px;
         font-size: 1.5rem;
+        text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
       }
       .fighter-card .char-portrait {
         width: 100px; height: 100px;
@@ -615,14 +620,13 @@
         padding: 5px;
         pointer-events: none;
         transition: background 0.5s ease, border-color 0.5s ease;
-        background-image: url('https://images2.alphacoders.com/573/thumb-1920-573197.jpg');
+        background-image: url('https://cdna.artstation.com/p/assets/images/images/003/714/696/large/pawel-kot-mk2-hd-armory.jpg?1476740914');
         background-size: cover;
         background-position: center;
       }
       .theme-scorpion .game-board { border-color: var(--scorpion-color); }
       .theme-subzero .game-board { border-color: var(--subzero-color); }
-      .theme-raiden .game-board { border-color: var(--raiden-color); animation: raiden-bg-flash 10s infinite; }
-      @keyframes raiden-bg-flash { 0%, 98% { filter: brightness(1); } 98.5%, 99.5% { filter: brightness(2.5); } 99%, 100% { filter: brightness(1); } }
+      .theme-raiden .game-board { border-color: var(--raiden-color); }
       .theme-reptile .game-board { border-color: var(--reptile-color); }
       .theme-kano .game-board { border-color: var(--kano-color); }
       .theme-liukang .game-board { border-color: var(--liukang-color); }
@@ -644,7 +648,7 @@
       .game-piece svg { width: 100%; height: 100%; filter: drop-shadow(0 0 3px rgba(0,0,0,0.8)); transform: scale(1); transition: transform 0.2s ease-in-out; }
       
       /* Piece States */
-      .game-piece.cursor-on { outline: 3px dashed var(--scorpion-color); outline-offset: -3px; z-index: 4; }
+      body.using-keyboard .game-piece.cursor-on { outline: 3px dashed var(--scorpion-color); outline-offset: -3px; z-index: 4; }
       .game-piece.aiming { cursor: crosshair; transform: scale(1.05); }
       .game-piece.aiming:hover { transform: scale(1.15); box-shadow: 0 0 15px var(--fatality-color); }
       .game-piece.aim-target { animation: aim-target-pulse 1s infinite; }

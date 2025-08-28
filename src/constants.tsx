@@ -22,106 +22,139 @@ export const LADDER_DATA: Opponent[] = [
 
 // --- SVG Icons for Pieces ---
 export const PieceIcons: { [key in CharacterName]: React.FC } = {
-    scorpion: () => <svg viewBox="0 0 100 100"><g fill="var(--scorpion-color)" stroke="#1a1a1a" strokeWidth="5" strokeLinejoin="round"><path d="M 50 10 C 25 10, 10 30, 10 55 C 10 80, 25 90, 50 90 C 75 90, 90 80, 90 55 C 90 30, 75 10, 50 10 Z" /><path d="M 25 40 L 75 40 L 70 65 L 30 65 Z" fill="#1a1a1a" /><circle cx="40" cy="53" r="5" fill="#fff" /><circle cx="60" cy="53" r="5" fill="#fff" /></g></svg>,
-    subzero: () => <svg viewBox="0 0 100 100"><g fill="var(--subzero-color)" stroke="#1a1a1a" strokeWidth="4" strokeLinejoin="round"><path d="M50 10 L55 35 L75 30 L60 50 L75 70 L55 65 L50 90 L45 65 L25 70 L40 50 L25 30 L45 35 Z" /></g></svg>,
+    scorpion: () => (
+        <svg viewBox="0 0 100 100">
+            <g fill="#FFFFFF" stroke="#1a1a1a" strokeWidth="4" strokeLinejoin="round" strokeLinecap="round">
+                <path d="M50,15 C 25,15 20,40 25,60 L 25,80 C 25,90 40,95 50,95 C 60,95 75,90 75,80 L 75,60 C 80,40 75,15 50,15 Z" />
+                <circle cx="40" cy="50" r="10" fill="#1a1a1a" stroke="none"/>
+                <circle cx="60" cy="50" r="10" fill="#1a1a1a" stroke="none"/>
+                <path d="M47,62 L53,62 L50,72 Z" fill="#1a1a1a" stroke="none" />
+                <path d="M35,80 H 65 M40,80 V 88 M45,80 V 88 M50,80 V 88 M55,80 V 88 M60,80 V 88" stroke="#1a1a1a" strokeWidth="2" fill="none" strokeLinecap="butt" />
+            </g>
+        </svg>
+    ),
+    subzero: () => (
+        <svg viewBox="0 0 100 100">
+            <g stroke="var(--subzero-color)" strokeWidth="6" strokeLinecap="round">
+                <path d="M50,20 L50,80" />
+                <path d="M28.8,30 L71.2,70" />
+                <path d="M28.8,70 L71.2,30" />
+                <path d="M50,20 L40,30" />
+                <path d="M50,20 L60,30" />
+                <path d="M50,80 L40,70" />
+                <path d="M50,80 L60,70" />
+                <path d="M28.8,30 L35.8,20.2" />
+                <path d="M28.8,30 L19,37" />
+                <path d="M71.2,70 L78.2,79.8" />
+                <path d="M71.2,70 L81,63" />
+                <path d="M28.8,70 L19,63" />
+                <path d="M28.8,70 L35.8,79.8" />
+                <path d="M71.2,30 L81,37" />
+                <path d="M71.2,30 L64.2,20.2" />
+            </g>
+        </svg>
+    ),
     reptile: () => <svg viewBox="0 0 100 100"><g><circle cx="50" cy="50" r="40" fill="var(--reptile-color)" stroke="#1a1a1a" strokeWidth="5" /><path d="M50 20 C 60 35, 60 65, 50 80 C 40 65, 40 35, 50 20 Z" fill="#1a1a1a" /><circle cx="50" cy="50" r="30" fill="none" stroke="rgba(0,0,0,0.3)" strokeWidth="6" /></g></svg>,
     kano: () => <svg viewBox="0 0 100 100"><g fill="var(--kano-color)" stroke="#1a1a1a" strokeWidth="5"><circle cx="50" cy="50" r="40" /><circle cx="50" cy="50" r="25" fill="#fff" /><circle cx="50" cy="50" r="10" /><path d="M50 10 V 90 M10 50 H 90" stroke="#1a1a1a" strokeWidth="4" fill="none" opacity="0.6" strokeDasharray="5,5" /></g></svg>,
-    raiden: () => <svg viewBox="0 0 100 100"><g stroke="#1a1a1a" strokeWidth="5" strokeLinejoin="round" strokeLinecap="round"><path fill="var(--raiden-color)" d="M 75 55 C 85 55 90 45 90 35 C 90 25 85 15 75 15 C 70 15 65 10 55 10 C 45 10 40 15 35 15 C 25 15 15 25 15 35 C 15 45 25 55 35 55 Z" /><path fill="#FFFF00" d="M 60 45 L 45 65 L 55 65 L 40 85 L 65 60 L 55 60 Z" /></g></svg>,
+    raiden: () => (
+        <svg viewBox="0 0 100 100">
+            <g fill="var(--raiden-color)" stroke="#1a1a1a" strokeWidth="5" strokeLinejoin="round" strokeLinecap="round">
+                <path d="M50 10 L30 50 L45 50 L40 90 L70 40 L55 40 L50 10 Z" />
+            </g>
+        </svg>
+    ),
     liukang: () => (
         <svg viewBox="0 0 100 100">
-            <g>
-                <path 
-                    fill="var(--liukang-color)" 
-                    stroke="#1a1a1a" 
-                    strokeWidth="5"
-                    strokeLinejoin="round"
-                    d="M50 95 C 40 75, 20 70, 30 40 C 35 20, 45 15, 50 10 C 55 15, 65 20, 70 40 C 80 70, 60 75, 50 95 Z"
-                />
+            <g stroke="#1a1a1a" strokeWidth="5" strokeLinejoin="round">
+                <path fill="var(--liukang-color)" d="M50,95 C35,80 20,75 30,45 C35,25 45,15 50,10 C55,15 65,25 70,45 C80,75 65,80 50,95 Z" />
+                <path fill="#FFEB3B" d="M50,85 C42,75 35,70 40,50 C42,38 48,30 50,25 C52,30 58,38 60,50 C65,70 58,75 50,85 Z" />
             </g>
         </svg>
     ),
 };
 
-export const CHARACTER_DATA: { [key in CharacterName]: { name: string, description: string } } = {
-    scorpion: { 
-        name: 'Scorpion', 
-        description: 'Ability: Netherrealm Flames - Select a piece to destroy it and all others of the same type.',
-    },
-    subzero: { 
-        name: 'Sub-Zero', 
-        description: 'Ability: Ice Ball - Freeze and destroy a 4-piece cluster.',
-    },
-    raiden: { 
-        name: 'Raiden', 
-        description: 'Ability: Lightning Strike - Clear a random 2x2 area.',
-    },
-    reptile: { 
-        name: 'Reptile', 
-        description: 'Ability: Acid Spit - Clear a random column.',
-    },
-    kano: { 
-        name: 'Kano', 
-        description: 'Ability: Kano Ball - Clear a random row.',
-    },
-    liukang: { 
-        name: 'Liu Kang', 
-        description: 'Ability: Dragon Fire - Convert a random piece type to your own.',
-    },
-};
-
-// --- Local Banter Data ---
-export const LOCAL_BANTER: { [key in CharacterName | 'opponent']: { [event: string]: string[] } } = {
+export const CHARACTER_DATA: {
+    [key in CharacterName]: { name: string; description: string; ability: string; }
+} = {
     scorpion: {
-        idle: ["The Netherrealm awaits...", "I am Scorpion.", "Vengeance is patient.", "My fire burns eternal."],
-        gameStart: ["Vengeance will be mine!", "The Shirai Ryu do not know defeat!", "You will taste the fires of the Netherrealm!", "For my family and clan!"],
-        highCombo: ["Impressive!", "Feel the sting of my chain!", "Now you feel my wrath!", "Burning hot!", "Excellent!"],
-        ability: ["GET OVER HERE!", "Come here!", "Nowhere to run!"],
-        gameOverWin: ["A flawless victory.", "The Shirai Ryu are avenged.", "To the Netherrealm with you!"],
-        gameOverLoss: ["This is not over!", "I will have my revenge.", "You are only delaying the inevitable."],
+        name: 'Scorpion',
+        description: 'Ability: Netherrealm Flame. Destroys all pieces of a chosen type.',
+        ability: 'Netherrealm Flame'
     },
     subzero: {
-        idle: ["Cold preserves.", "The Lin Kuei are watching.", "Patience is a weapon.", "Winter is coming."],
-        gameStart: ["This fight will be your last.", "For the Lin Kuei!", "You will feel the chill of death.", "I am Sub-Zero."],
-        highCombo: ["A cold finish.", "You lack discipline.", "Perfectly executed.", "An icy reception!", "Flawless."],
-        ability: ["Feel the freeze!", "Ice ball!", "You are frozen in your tracks.", "Absolute Zero!"],
-        gameOverWin: ["Justice is served.", "The Lin Kuei are victorious.", "You are beaten."],
-        gameOverLoss: ["I underestimated you.", "This battle is not the war.", "A temporary setback."],
+        name: 'Sub-Zero',
+        description: 'Ability: Ice Shatter. Destroys a 2x2 area of pieces.',
+        ability: 'Ice Shatter'
     },
     raiden: {
-        idle: ["The Elder Gods are watching.", "Balance must be preserved.", "Focus your energy.", "A storm is brewing."],
-        gameStart: ["The fate of Earthrealm is at stake.", "I must consult with the Elder Gods.", "For Earthrealm!", "Face the God of Thunder!"],
-        highCombo: ["By the Elder Gods!", "A shocking display!", "The thunder claps for you.", "Electrifying!", "Divine power!"],
-        ability: ["Thunder take you!", "Lightning strike!", "Feel the power of the storm!", "There is no escape!"],
-        gameOverWin: ["Earthrealm is safe.", "A worthy victory.", "The heavens have decided."],
-        gameOverLoss: ["The Elder Gods are displeased.", "This is but a setback.", "Earthrealm's fate is uncertain."],
+        name: 'Raiden',
+        description: 'Ability: Lightning Strike. Randomly destroys a 2x2 block of pieces.',
+        ability: 'Lightning Strike'
     },
     reptile: {
-        idle: ["My clan will return...", "Zaterra will rise again.", "I am the last of my kind.", "Sss..."],
-        gameStart: ["I will find you...", "For Shao Kahn!", "Now you face a true warrior.", "You cannot see me..."],
-        highCombo: ["Excellent!", "You cannot hide.", "Clever...", "A venomous strike!", "Ssssuperb!"],
-        ability: ["Acid spit!", "Feel the sting!", "Now you dissolve!", "Taste my acid!"],
-        gameOverWin: ["My clan is supreme.", "Another victory.", "For the glory of Zaterra!"],
-        gameOverLoss: ["You are... formidable.", "This is not the end.", "I will adapt... and overcome."],
+        name: 'Reptile',
+        description: 'Ability: Acid Spit. Destroys a random column.',
+        ability: 'Acid Spit'
     },
     kano: {
-        idle: ["What're you lookin' at?", "This is boring.", "Let's get on with it.", "Time for a bit of fun."],
-        gameStart: ["Let's have a little fun, eh?", "Time to get paid.", "You're lookin' at the Black Dragon's finest.", "Don't blink."],
-        highCombo: ["Beauty!", "That's how it's done!", "Too easy, mate.", "Crikey!", "A real ripper!"],
-        ability: ["Here I come!", "Kano Ball!", "Outta the way!", "You're in for a shock!"],
-        gameOverWin: ["All too easy.", "Never mess with the Black Dragon.", "Ka-ballin'!"],
-        gameOverLoss: ["You got lucky, scum.", "I'll be back for ya.", "Bloody hell..."],
+        name: 'Kano',
+        description: 'Ability: Kano Ball. Destroys a random row.',
+        ability: 'Kano Ball'
     },
     liukang: {
-        idle: ["Meditation brings clarity.", "The White Lotus watches.", "Control your chi.", "The dragon stirs."],
-        gameStart: ["The Shaolin will be victorious.", "For the honor of the temple.", "Show me what you can do.", "I am the champion."],
-        highCombo: ["Well done.", "A display of skill.", "The dragon is pleased.", "Excellent form.", "A powerful strike."],
-        ability: ["Dragon's fire!", "Feel the heat!", "By the spirits of the dragon!", "Wu-Sa!"],
-        gameOverWin: ["The tournament is won.", "Honor is satisfied.", "The Shaolin are triumphant."],
-        gameOverLoss: ["A worthy opponent.", "I must train harder.", "You have fought well."],
-    },
-    opponent: {
-        idle: ["Make your move.", "...", "I am waiting.", "Do not waste my time.", "Hmph."],
-        taunt: ["You are weak!", "Is that all you've got?", "Pathetic!", "My turn!", "You will fail.", "A foolish move!", "You cannot win!"],
-        onDefeat: ["Impossible...", "I have been bested.", "This cannot be.", "How...?", "Argh...!"],
+        name: 'Liu Kang',
+        description: 'Ability: Dragon Fire. Converts a random piece type to Liu Kang\'s piece.',
+        ability: 'Dragon Fire'
     }
 };
+
+export const LOCAL_BANTER: { [key in CharacterName | 'opponent']: { [key: string]: string[] } } = {
+    scorpion: {
+        gameStart: ["Vengeance will be mine!", "Get over here!", "I am the lord of the Netherrealm!"],
+        highCombo: ["Feel the sting of my spear!", "You cannot defeat me.", "Impressive... for a mortal."],
+        ability: ["To the Netherrealm!", "Burn!"],
+        gameOverWin: ["A worthy victory.", "The Shirai Ryu are avenged."],
+        gameOverLoss: ["This is not over...", "You will pay for this."]
+    },
+    subzero: {
+        gameStart: ["This fight will be your last.", "For the Lin Kuei!", "You will feel the chill of death."],
+        highCombo: ["You are no match for the Grandmaster.", "Winter is coming.", "My power is absolute."],
+        ability: ["Freeze!", "Feel the cold."],
+        gameOverWin: ["The cold is a merciless ally.", "Justice is served."],
+        gameOverLoss: ["I will return, stronger.", "A temporary setback."]
+    },
+    raiden: {
+        gameStart: ["I will consult with the Elder Gods.", "Earthrealm is under my protection.", "There are fates worse than death."],
+        highCombo: ["Thunder take you!", "By the gods!", "Your soul is stained."],
+        ability: ["Feel the power of lightning!", "For Earthrealm!"],
+        gameOverWin: ["The tournament is won.", "A new day dawns for Earthrealm."],
+        gameOverLoss: ["The future is in peril.", "I must not fail again."]
+    },
+    reptile: {
+        gameStart: ["For Zaterra!", "I will find my people.", "You will not see me coming."],
+        highCombo: ["My venom is potent.", "Clever girl...", "I am the last of my kind."],
+        ability: ["Acid Spit!", "Disappear..."],
+        gameOverWin: ["My quest continues.", "Zaterra will rise again."],
+        gameOverLoss: ["I am alone...", "My brood will be lost forever."]
+    },
+    kano: {
+        // FIX: Removed the 'name' property which was a string. The type for this object requires all property values to be string arrays.
+        gameStart: ["Let's have a little fun, eh?", "Time to get paid.", "Don't mess with the Black Dragon."],
+        highCombo: ["Beauty, ain't it?", "Right in the goolies!", "You're a bloody mess."],
+        ability: ["Kano Ball!", "Here comes the thunder from down under!"],
+        gameOverWin: ["Easy money.", "Always bet on black... Dragon."],
+        gameOverLoss: ["Ripper!", "I've been robbed!"]
+    },
+    liukang: {
+        gameStart: ["The spirits of the Shaolin are with me.", "Show me what you can do.", "I fight for the honor of my ancestors."],
+        highCombo: ["Feel the heat of the dragon!", "A flawless technique.", "You lack discipline."],
+        ability: ["Dragon's Fire!", "For the Order of Light!"],
+        gameOverWin: ["The champion is victorious.", "Balance has been restored."],
+        gameOverLoss: ["I have brought shame to the temple.", "I must train harder."]
+    },
+    opponent: {
+        taunt: ["Is that all you've got?", "Pathetic!", "My grandmother fights better than that.", "You're starting to bore me."],
+        onDefeat: ["This cannot be...", "I have been bested...", "You are strong... for now."],
+        idle: ["You face the might of Shao Kahn's champion!", "Prepare to die!", "Your soul will be mine."]
+    }
+}
