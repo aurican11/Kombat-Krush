@@ -329,7 +329,7 @@ export const processGameLoop = async ({ state, dispatch, playSoundMuted, pieceId
     let boardCopy = state.board.map(row => [...row]);
     let swapLocation: { row: number, col: number } | null = null;
     let anyMatchesOccurred = false;
-
+    
     // --- Initial Action (Swap or Ability) ---
     if (initialAction.type === 'swap') {
         swapLocation = initialAction.to;
@@ -368,20 +368,14 @@ export const processGameLoop = async ({ state, dispatch, playSoundMuted, pieceId
             const { allPiecesToClear, specialToCreate, specialDamage } = handleMatchClearingAndSpecials(boardCopy, matches, swapLocation, dispatch);
             if (specialToCreate) playSoundMuted('specialCreate');
             
-            if (state.selectedCharacter) {
-                const charPieces = [...allPiecesToClear].filter(p => p.type === state.selectedCharacter).length;
-                dispatch({ type: 'UPDATE_ABILITY_METER', payload: charPieces });
-            }
+            const totalPiecesCleared = allPiecesToClear.size;
+            dispatch({ type: 'UPDATE_ABILITY_METER', payload: totalPiecesCleared });
             
             const baseDamage = [...allPiecesToClear].reduce((acc, piece) => acc + (piece.type === state.selectedCharacter ? 1.5 : 1), 0);
             const totalDamage = Math.round((baseDamage + specialDamage) * currentCombo);
-
-            dispatch({ type: 'UPDATE_HEALTH', payload: { opponent: state.opponentHealth - totalDamage }});
-            dispatch({ type: 'UPDATE_FATALITY_METER', payload: totalDamage });
-            dispatch({ type: 'SET_OPPONENT_IS_HIT', payload: true });
-            setTimeout(() => dispatch({ type: 'SET_OPPONENT_IS_HIT', payload: false }), 400);
-            playSoundMuted('opponentHit');
-
+            
+            dispatch({ type: 'DEAL_DAMAGE', payload: totalDamage });
+            
             const popupLocation = swapLocation || { row: matches[0].pieces[0].row, col: matches[0].pieces[0].col };
             dispatch({ type: 'ADD_TEXT_POPUP', payload: { popup: { id: 0, text: `${totalDamage} DMG! ${currentCombo > 1 ? `(x${currentCombo})` : ''}`, row: popupLocation.row, col: popupLocation.col, className: 'damage-popup' }, counterRef: popupIdCounter }});
             setTimeout(() => dispatch({ type: 'REMOVE_TEXT_POPUP' }), 1500);
@@ -415,65 +409,18 @@ export const processGameLoop = async ({ state, dispatch, playSoundMuted, pieceId
     const finalBoard = boardCopy;
     dispatch({ type: 'SET_BOARD', payload: finalBoard });
 
-    // Check for win condition
-    if (state.opponentHealth <= 0 && state.gameState === 'playing') {
-         dispatch({ type: 'OPPONENT_BANTER', payload: { event: 'onDefeat' } });
-         await sleep(1500);
-         if (state.currentLadderLevel >= state.shuffledLadder.length - 1) {
-             dispatch({ type: 'SET_GAME_STATE', payload: 'ladderComplete' });
-         } else {
-             dispatch({ type: 'SET_GAME_STATE', payload: 'levelWin' });
-         }
-    } else if (!hasPossibleMoves(finalBoard) && state.gameState === 'playing') {
-        // Check for no more moves
+    if (!hasPossibleMoves(finalBoard) && state.gameState === 'playing') {
         await sleep(500);
         dispatch({ type: 'SET_BOARD', payload: createInitialBoard(pieceIdCounter) });
     }
 
-    // If initial action was a swap and it resulted in no matches, swap back
     if (initialAction.type === 'swap' && !anyMatchesOccurred) {
         await sleep(ANIMATION_DELAY * 2);
         dispatch({ type: 'SET_BOARD', payload: state.board }); // Revert to original board state
     }
 
-    // Finally, handle opponent's turn if matches occurred
     if (anyMatchesOccurred) {
-        handleOpponentTurn(state, dispatch, playSoundMuted);
-    } else {
-        dispatch({ type: 'SET_PROCESSING', payload: false });
-    }
-};
-
-export const handleOpponentTurn = (state: AppState, dispatch: Dispatch<AppAction>, playSoundMuted: Function) => {
-    if (state.isProcessing || state.gameState !== 'playing' || !state.opponent) {
-        dispatch({ type: 'SET_PROCESSING', payload: false });
-        return;
-    }
-
-    dispatch({ type: 'DECREMENT_MOVES_UNTIL_ATTACK' });
-    const newMovesCounter = state.movesUntilAttack - 1;
-
-    if (newMovesCounter <= 0) {
-        setTimeout(() => {
-            dispatch({ type: 'OPPONENT_BANTER', payload: { event: 'taunt' }});
-            playSoundMuted('playerHit');
-            document.body.classList.add('screen-shake');
-            setTimeout(() => document.body.classList.remove('screen-shake'), 400);
-
-            const newPlayerHealth = Math.max(0, state.playerHealth - state.opponent!.attack);
-            dispatch({ type: 'UPDATE_HEALTH', payload: { player: newPlayerHealth } });
-            dispatch({ type: 'SET_PLAYER_IS_HIT', payload: true });
-            setTimeout(() => dispatch({ type: 'SET_PLAYER_IS_HIT', payload: false }), 400);
-            dispatch({ type: 'RESET_MOVES_UNTIL_ATTACK' });
-
-            if (newPlayerHealth <= 0) {
-                dispatch({ type: 'SET_GAME_STATE', payload: 'gameOver' });
-                playSoundMuted('gameOver');
-            } else {
-                dispatch({ type: 'SET_PROCESSING', payload: false });
-            }
-        }, 500);
-
+        dispatch({ type: 'PROCESS_OPPONENT_TURN' });
     } else {
         dispatch({ type: 'SET_PROCESSING', payload: false });
     }

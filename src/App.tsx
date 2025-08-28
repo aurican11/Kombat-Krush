@@ -1,6 +1,6 @@
 import React, { useEffect, useCallback, useRef, useReducer } from 'react';
 import { StartScreen, CharacterSelectScreen, EndGameModal, PlayerProfile, OpponentProfile, GameHeader, GameBoard, MobileFooter } from './components';
-import { playSound, createInitialBoard, processGameLoop, handleOpponentTurn } from './utils';
+import { playSound, createInitialBoard, processGameLoop } from './utils';
 import { LADDER_DATA } from './constants';
 import type { CharacterName } from './types';
 import { initialState, gameReducer } from './reducer';
@@ -13,7 +13,8 @@ const App = () => {
         movesUntilAttack, opponentBanter, playerIsHit, opponentIsHit, selectedPiece, isProcessing,
         combo, textPopups, autoHintIds, manualHintIds, isHintOnCooldown, hintCooldown, comboKey,
         isMuted, showToasty, specialEffects, keyboardCursor, selectedCharacter, abilityMeter,
-        abilityState, fatalityMeter, fatalityState, isFatalityWin, aimTarget, playerBanter, maxCombo
+        abilityState, fatalityMeter, fatalityState, isFatalityWin, aimTarget, playerBanter, maxCombo,
+        score
     } = state;
 
     const pieceIdCounter = useRef(0);
@@ -53,7 +54,33 @@ const App = () => {
         if (selectedCharacter) {
             document.body.classList.add(`theme-${selectedCharacter}`);
         }
-    }, [gameState, selectedCharacter]);
+        if (gameState === 'gameOver') {
+            playSoundMuted('gameOver');
+        }
+    }, [gameState, selectedCharacter, playSoundMuted]);
+
+    useEffect(() => {
+        if (playerIsHit) {
+            playSoundMuted('playerHit');
+            document.body.classList.add('screen-shake');
+            const timer = setTimeout(() => {
+                document.body.classList.remove('screen-shake');
+                dispatch({ type: 'SET_PLAYER_IS_HIT', payload: false });
+            }, 400);
+            return () => clearTimeout(timer);
+        }
+    }, [playerIsHit, playSoundMuted]);
+
+    useEffect(() => {
+        if (opponentIsHit) {
+            playSoundMuted('opponentHit');
+            const timer = setTimeout(() => {
+                dispatch({ type: 'SET_OPPONENT_IS_HIT', payload: false });
+            }, 400);
+            return () => clearTimeout(timer);
+        }
+    }, [opponentIsHit, playSoundMuted]);
+
 
     useEffect(() => {
         if (hintTimerId.current) clearTimeout(hintTimerId.current);
@@ -76,18 +103,18 @@ const App = () => {
     
     const startGame = useCallback((character: CharacterName) => {
         const opponents = LADDER_DATA.filter(opp => opp.pieceType !== character);
-        for (let i = opponents.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [opponents[i], opponents[j]] = [opponents[j], opponents[i]];
-        }
         const newBoard = createInitialBoard(pieceIdCounter);
         dispatch({ type: 'START_GAME', payload: { character, ladder: opponents.slice(0, 5), board: newBoard } });
     }, []);
     
-    const handleRestartClick = () => {
+    const handleGoToCharacterSelect = () => {
         dispatch({ type: 'SET_GAME_STATE', payload: 'characterSelect' });
     }
     
+    const handleGoToMainMenu = () => {
+        dispatch({ type: 'RESET_STATE' });
+    }
+
     const handleNextLevel = useCallback(() => {
         if (currentLadderLevel + 1 < shuffledLadder.length) {
             const newBoard = createInitialBoard(pieceIdCounter);
@@ -225,7 +252,9 @@ const App = () => {
                 gameState={gameState} 
                 opponent={opponent} 
                 maxCombo={maxCombo} 
-                onRestart={handleRestartClick} 
+                score={score}
+                onPlayAgain={handleGoToCharacterSelect}
+                onMainMenu={handleGoToMainMenu}
                 onNextLevel={handleNextLevel} 
                 isFatalityWin={isFatalityWin}
             />

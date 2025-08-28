@@ -61,7 +61,18 @@ export const GamePiece = memo(({ piece, onClick, isSelected, isHinted, isManualH
     );
 });
 
-export const EndGameModal = memo(({ gameState, opponent, maxCombo, onRestart, onNextLevel, isFatalityWin }: { gameState: GameState, opponent: Opponent | null, maxCombo: number, onRestart: () => void, onNextLevel: () => void, isFatalityWin?: boolean }) => {
+type EndGameModalProps = {
+    gameState: GameState;
+    opponent: Opponent | null;
+    maxCombo: number;
+    score: number;
+    onPlayAgain: () => void;
+    onMainMenu: () => void;
+    onNextLevel: () => void;
+    isFatalityWin?: boolean;
+};
+
+export const EndGameModal = memo(({ gameState, opponent, maxCombo, score, onPlayAgain, onMainMenu, onNextLevel, isFatalityWin }: EndGameModalProps) => {
     if (!['levelWin', 'ladderComplete', 'gameOver'].includes(gameState)) {
         return null;
     }
@@ -71,12 +82,12 @@ export const EndGameModal = memo(({ gameState, opponent, maxCombo, onRestart, on
             <div className={`modal-dialog ${gameState}`}>
                  {gameState === 'ladderComplete' && <h2 className="victory-text perfect-victory-text">FLAWLESS VICTORY</h2>}
                  {gameState === 'levelWin' && (isFatalityWin ? <h2 className="fatality-text">FATALITY</h2> : <h2 className="victory-text">YOU WIN</h2>)}
-                 {gameState === 'gameOver' && <h2 className='fatality-text'>FATALITY</h2>}
+                 {gameState === 'gameOver' && <h2 className='fatality-text'>GAME OVER</h2>}
 
                 {gameState === 'ladderComplete' ? (
                     <>
                         <p>You have defeated all challengers and conquered the ladder!</p>
-                        <button onClick={onRestart}>Play Again</button>
+                        <button onClick={onPlayAgain}>Play Again</button>
                     </>
                 ) : gameState === 'levelWin' ? (
                     <>
@@ -85,10 +96,15 @@ export const EndGameModal = memo(({ gameState, opponent, maxCombo, onRestart, on
                     </>
                 ) : (
                      <>
-                        <h3>You Lose</h3>
+                        <div className="final-score-container">
+                            <p>Final Score: <span>{score}</span></p>
+                            <p>Max Combo: <span>x{maxCombo}</span></p>
+                        </div>
                         <p>You were defeated by {opponent?.name}.</p>
-                        <p>Max Combo: x{maxCombo}</p>
-                        <button onClick={onRestart}>Try Again</button>
+                        <div className="modal-button-group">
+                            <button onClick={onPlayAgain}>Play Again</button>
+                            <button onClick={onMainMenu} style={{backgroundColor: '#222', borderColor: '#555'}}>Main Menu</button>
+                        </div>
                     </>
                 )}
             </div>
@@ -259,9 +275,9 @@ export const GameBoard = memo(({ board, specialEffects, textPopups, showToasty, 
                     effect.type === 'lightning' ? 'effect-lightning' :
                     effect.type === 'dragon' ? 'effect-dragon' :
                     effect.type === 'acid_spit' ? 'effect-acid-spit' :
-                    effect.type === 'kano_ball' ? 'effect-kano-ball' :
+                    effect.type === 'kano_ball' ? 'effect-kano_ball' :
                     effect.type === 'dragon_fire' ? 'effect-dragon-fire' :
-                    effect.type === 'netherrealm_flame' ? 'effect-netherrealm-flame' :
+                    effect.type === 'netherrealm_flame' ? 'effect-netherrealm_flame' :
                     effect.type === 'ice_shatter' ? 'effect-ice-shatter' : ''
                 }`} style={{ top: `${effect.row * 12.5}%`, left: `${effect.col * 12.5}%` }}>
                     {effect.type === 'ice_shatter' && Array.from({ length: 6 }).map((_, i) => <i key={i} />)}

@@ -54,6 +54,7 @@ export interface AppState {
     isProcessing: boolean;
     combo: number;
     maxCombo: number;
+    score: number;
     textPopups: TextPopup[];
     autoHintIds: number[] | null;
     manualHintIds: number[] | null;
@@ -78,17 +79,18 @@ export type AppAction =
     | { type: 'SET_GAME_STATE'; payload: GameState }
     | { type: 'START_GAME'; payload: { character: CharacterName; ladder: Opponent[]; board: Piece[][] } }
     | { type: 'NEXT_LEVEL'; payload: { board: Piece[][] } }
+    | { type: 'RESET_STATE' }
     | { type: 'SELECT_PIECE'; payload: { row: number; col: number } | null }
     | { type: 'SET_BOARD'; payload: Piece[][] }
-    | { type: 'UPDATE_HEALTH'; payload: { player?: number; opponent?: number } }
+    | { type: 'DEAL_DAMAGE'; payload: number }
+    | { type: 'PROCESS_OPPONENT_TURN' }
     | { type: 'SET_PLAYER_IS_HIT'; payload: boolean }
     | { type: 'SET_OPPONENT_IS_HIT'; payload: boolean }
-    | { type: 'DECREMENT_MOVES_UNTIL_ATTACK' }
-    | { type: 'RESET_MOVES_UNTIL_ATTACK' }
     | { type: 'SET_PROCESSING'; payload: boolean }
     | { type: 'SET_COMBO'; payload: number }
     | { type: 'INCREMENT_COMBO_KEY' }
     | { type: 'SET_MAX_COMBO' }
+    | { type: 'UPDATE_SCORE', payload: number }
     | { type: 'ADD_TEXT_POPUP'; payload: { popup: TextPopup; counterRef: MutableRefObject<number> } }
     | { type: 'REMOVE_TEXT_POPUP' }
     | { type: 'ADD_SPECIAL_EFFECT'; payload: { effect: SpecialEffect } }

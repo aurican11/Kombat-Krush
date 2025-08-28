@@ -18,6 +18,7 @@ export const initialState: AppState = {
     isProcessing: false,
     combo: 1,
     maxCombo: 1,
+    score: 0,
     textPopups: [],
     autoHintIds: null,
     manualHintIds: null,
@@ -42,9 +43,14 @@ export function gameReducer(state: AppState, action: AppAction): AppState {
     switch (action.type) {
         case 'SET_GAME_STATE':
             return { ...state, gameState: action.payload };
+        case 'RESET_STATE':
+            return initialState;
         case 'START_GAME': {
             const { character, ladder, board } = action.payload;
             const firstOpponent = ladder[0];
+            const playerIdleBanterOptions = LOCAL_BANTER[character]?.idle || [];
+            const opponentIdleBanterOptions = LOCAL_BANTER.opponent?.idle || [];
+            
             return {
                 ...initialState,
                 gameState: 'playing',
@@ -55,11 +61,15 @@ export function gameReducer(state: AppState, action: AppAction): AppState {
                 opponentHealth: firstOpponent.health,
                 movesUntilAttack: firstOpponent.movesPerAttack,
                 board,
+                playerBanter: { key: Date.now(), text: playerIdleBanterOptions[Math.floor(Math.random() * playerIdleBanterOptions.length)] || '' },
+                opponentBanter: { key: Date.now() + 1, text: opponentIdleBanterOptions[Math.floor(Math.random() * opponentIdleBanterOptions.length)] || '' },
             };
         }
         case 'NEXT_LEVEL': {
             const nextLevel = state.currentLadderLevel + 1;
             const nextOpponent = state.shuffledLadder[nextLevel];
+            const playerIdleBanterOptions = state.selectedCharacter ? LOCAL_BANTER[state.selectedCharacter]?.idle || [] : [];
+            const opponentIdleBanterOptions = LOCAL_BANTER.opponent?.idle || [];
             return {
                 ...state,
                 gameState: 'playing',
@@ -74,25 +84,77 @@ export function gameReducer(state: AppState, action: AppAction): AppState {
                 fatalityMeter: 0,
                 fatalityState: 'idle',
                 isFatalityWin: false,
+                playerBanter: { key: Date.now(), text: playerIdleBanterOptions[Math.floor(Math.random() * playerIdleBanterOptions.length)] || '' },
+                opponentBanter: { key: Date.now() + 1, text: opponentIdleBanterOptions[Math.floor(Math.random() * opponentIdleBanterOptions.length)] || '' },
             };
         }
         case 'SELECT_PIECE':
             return { ...state, selectedPiece: action.payload };
         case 'SET_BOARD':
             return { ...state, board: action.payload };
-        case 'UPDATE_HEALTH': {
-            const newPlayerHealth = action.payload.player !== undefined ? action.payload.player : state.playerHealth;
-            const newOpponentHealth = action.payload.opponent !== undefined ? action.payload.opponent : state.opponentHealth;
-            return { ...state, playerHealth: Math.max(0, newPlayerHealth), opponentHealth: Math.max(0, newOpponentHealth) };
+        case 'DEAL_DAMAGE': {
+            const totalDamage = action.payload;
+            const newOpponentHealth = Math.max(0, state.opponentHealth - totalDamage);
+            const newFatalityMeter = Math.min(FATALITY_METER_MAX, state.fatalityMeter + totalDamage);
+            const isWin = newOpponentHealth <= 0;
+            
+            let newGameState = state.gameState;
+            let newBanter = state.opponentBanter;
+
+            if (isWin && state.gameState === 'playing') {
+                newGameState = state.currentLadderLevel >= state.shuffledLadder.length - 1 ? 'ladderComplete' : 'levelWin';
+                const defeatOptions = LOCAL_BANTER.opponent?.onDefeat || [];
+                newBanter = { key: Date.now(), text: defeatOptions[Math.floor(Math.random() * defeatOptions.length)] || '' };
+            }
+
+            return {
+                ...state,
+                opponentHealth: newOpponentHealth,
+                opponentIsHit: true,
+                score: state.score + totalDamage,
+                fatalityMeter: newFatalityMeter,
+                fatalityState: newFatalityMeter >= FATALITY_METER_MAX ? 'ready' : state.fatalityState,
+                gameState: newGameState,
+                opponentBanter: newBanter
+            };
+        }
+         case 'PROCESS_OPPONENT_TURN': {
+            if (state.gameState !== 'playing') {
+                return { ...state, isProcessing: false };
+            }
+        
+            const newMovesCounter = state.movesUntilAttack - 1;
+        
+            if (newMovesCounter <= 0) {
+                if (!state.opponent) return { ...state, isProcessing: false }; 
+                
+                const newPlayerHealth = Math.max(0, state.playerHealth - state.opponent.attack);
+                const isGameOver = newPlayerHealth <= 0;
+        
+                const tauntOptions = LOCAL_BANTER.opponent?.taunt || [];
+                const tauntText = tauntOptions[Math.floor(Math.random() * tauntOptions.length)] || '';
+        
+                return {
+                    ...state,
+                    playerHealth: newPlayerHealth,
+                    playerIsHit: true,
+                    movesUntilAttack: state.opponent.movesPerAttack,
+                    isProcessing: isGameOver,
+                    gameState: isGameOver ? 'gameOver' : state.gameState,
+                    opponentBanter: { key: Date.now(), text: tauntText },
+                };
+            }
+        
+            return {
+                ...state,
+                movesUntilAttack: newMovesCounter,
+                isProcessing: false,
+            };
         }
         case 'SET_PLAYER_IS_HIT':
             return { ...state, playerIsHit: action.payload };
         case 'SET_OPPONENT_IS_HIT':
             return { ...state, opponentIsHit: action.payload };
-        case 'DECREMENT_MOVES_UNTIL_ATTACK':
-            return { ...state, movesUntilAttack: Math.max(0, state.movesUntilAttack - 1) };
-        case 'RESET_MOVES_UNTIL_ATTACK':
-            return { ...state, movesUntilAttack: state.opponent?.movesPerAttack || 5 };
         case 'SET_PROCESSING':
             return { ...state, isProcessing: action.payload };
         case 'SET_COMBO':
@@ -101,6 +163,8 @@ export function gameReducer(state: AppState, action: AppAction): AppState {
             return { ...state, comboKey: state.comboKey + 1 };
         case 'SET_MAX_COMBO':
             return { ...state, maxCombo: Math.max(state.maxCombo, state.combo) };
+        case 'UPDATE_SCORE':
+            return { ...state, score: state.score + action.payload };
         case 'ADD_TEXT_POPUP':
             action.payload.popup.id = action.payload.counterRef.current++;
             return { ...state, textPopups: [...state.textPopups, action.payload.popup] };
