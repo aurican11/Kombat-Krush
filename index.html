@@ -44,7 +44,6 @@
         justify-content: center;
         align-items: center;
         min-height: 100dvh;
-        touch-action: none;
         
         background-image: url('https://cdna.artstation.com/p/assets/images/images/003/714/696/large/pawel-kot-mk2-hd-armory.jpg?1476740914');
         background-size: cover;
@@ -727,7 +726,7 @@
       @keyframes effect-col-anim { from { transform: scaleY(1) scaleX(0.6); opacity: 1; } to { transform: scaleY(16) scaleX(0.6); opacity: 0; } }
       .effect-dragon { width: 12.5%; height: 12.5%; border-radius: 50%; background: #ff00ff; box-shadow: 0 0 20px #ff00ff, 0 0 40px #ff00ff; animation: effect-dragon-anim 0.5s ease-out forwards; }
       @keyframes effect-dragon-anim { from { transform: scale(1); opacity: 1; } to { transform: scale(10); opacity: 0; } }
-      .effect-lightning { width: 25%; height: 25%; background: radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(255,255,255,0) 70%); border: 3px solid #fff; border-radius: 50%; animation: effect-lightning-anim 0.6s ease-out forwards; box-shadow: 0 0 15px 5px #fff, 0 0 30px 15px rgba(200, 200, 255, 0.7); }
+      .effect-lightning { width: 25%; height: 25%; background: radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(248, 200, 56, 0) 70%); border: 3px solid var(--scorpion-color); border-radius: 50%; animation: effect-lightning-anim 0.6s ease-out forwards; box-shadow: 0 0 15px 5px #fff, 0 0 30px 15px rgba(248, 200, 56, 0.7); }
       @keyframes effect-lightning-anim { 0% { transform: scale(0); opacity: 0; } 20% { transform: scale(1.2); opacity: 1; } 100% { transform: scale(1); opacity: 0; } }
       .effect-ice-shatter { width: 12.5%; height: 12.5%; }
       .effect-ice-shatter i { position: absolute; top: 50%; left: 50%; width: 20%; height: 20%; background: linear-gradient(45deg, #fff, #c0f0ff); border: 1px solid #fff; transform-origin: center; opacity: 0; animation: ice-shard-fly 0.8s ease-out forwards; }

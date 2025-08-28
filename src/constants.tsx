@@ -35,22 +35,23 @@ export const PieceIcons: { [key in CharacterName]: React.FC } = {
     ),
     subzero: () => (
         <svg viewBox="0 0 100 100">
-            <g stroke="var(--subzero-color)" strokeWidth="6" strokeLinecap="round">
-                <path d="M50,20 L50,80" />
-                <path d="M28.8,30 L71.2,70" />
-                <path d="M28.8,70 L71.2,30" />
-                <path d="M50,20 L40,30" />
-                <path d="M50,20 L60,30" />
-                <path d="M50,80 L40,70" />
-                <path d="M50,80 L60,70" />
-                <path d="M28.8,30 L35.8,20.2" />
-                <path d="M28.8,30 L19,37" />
-                <path d="M71.2,70 L78.2,79.8" />
-                <path d="M71.2,70 L81,63" />
-                <path d="M28.8,70 L19,63" />
-                <path d="M28.8,70 L35.8,79.8" />
-                <path d="M71.2,30 L81,37" />
-                <path d="M71.2,30 L64.2,20.2" />
+            <defs>
+                <g id="snowflake-arm">
+                    <path d="M50 42 L50 15" />
+                    <path d="M50 35 L42 30" />
+                    <path d="M50 35 L58 30" />
+                    <path d="M50 22 L45 18" />
+                    <path d="M50 22 L55 18" />
+                </g>
+            </defs>
+            <g stroke="var(--subzero-color)" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" fill="none">
+                <path d="M50 42 L57 46 L57 54 L50 58 L43 54 L43 46 Z" />
+                <use href="#snowflake-arm" />
+                <use href="#snowflake-arm" transform="rotate(60 50 50)" />
+                <use href="#snowflake-arm" transform="rotate(120 50 50)" />
+                <use href="#snowflake-arm" transform="rotate(180 50 50)" />
+                <use href="#snowflake-arm" transform="rotate(240 50 50)" />
+                <use href="#snowflake-arm" transform="rotate(300 50 50)" />
             </g>
         </svg>
     ),
@@ -58,7 +59,7 @@ export const PieceIcons: { [key in CharacterName]: React.FC } = {
     kano: () => <svg viewBox="0 0 100 100"><g fill="var(--kano-color)" stroke="#1a1a1a" strokeWidth="5"><circle cx="50" cy="50" r="40" /><circle cx="50" cy="50" r="25" fill="#fff" /><circle cx="50" cy="50" r="10" /><path d="M50 10 V 90 M10 50 H 90" stroke="#1a1a1a" strokeWidth="4" fill="none" opacity="0.6" strokeDasharray="5,5" /></g></svg>,
     raiden: () => (
         <svg viewBox="0 0 100 100">
-            <g fill="var(--raiden-color)" stroke="#1a1a1a" strokeWidth="5" strokeLinejoin="round" strokeLinecap="round">
+            <g fill="#f8c838" stroke="#1a1a1a" strokeWidth="5" strokeLinejoin="round" strokeLinecap="round">
                 <path d="M50 10 L30 50 L45 50 L40 90 L70 40 L55 40 L50 10 Z" />
             </g>
         </svg>
