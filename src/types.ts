@@ -5,7 +5,6 @@ export type PieceType = CharacterName | null;
 export type SpecialType = 'none' | 'row' | 'col' | 'dragon';
 export type GameState = 'start' | 'characterSelect' | 'playing' | 'gameOver' | 'levelWin' | 'ladderComplete';
 export type AbilityState = 'idle' | 'ready' | 'aiming';
-export type FatalityState = 'idle' | 'ready';
 export type SpecialEffect = { id: number; type: SpecialType | 'lightning' | 'ice_shatter' | 'acid_spit' | 'kano_ball' | 'dragon_fire' | 'netherrealm_flame'; row: number; col: number; };
 
 export interface Piece {
@@ -68,11 +67,9 @@ export interface AppState {
     selectedCharacter: CharacterName | null;
     abilityMeter: number;
     abilityState: AbilityState;
-    fatalityMeter: number;
-    fatalityState: FatalityState;
-    isFatalityWin: boolean;
     aimTarget: { row: number; col: number } | null;
     playerBanter: { key: number, text: string } | null;
+    showSettingsModal: boolean;
 }
 
 export type AppAction =
@@ -99,6 +96,7 @@ export type AppAction =
     | { type: 'PLAYER_BANTER'; payload: { event: 'gameStart' | 'highCombo' | 'ability' | 'gameOverWin' | 'gameOverLoss', character: CharacterName, cooldownRef: MutableRefObject<any>} }
     | { type: 'OPPONENT_BANTER'; payload: { event: 'taunt' | 'onDefeat'} }
     | { type: 'TOGGLE_MUTE' }
+    | { type: 'TOGGLE_SETTINGS_MODAL' }
     | { type: 'CLEAR_HINTS' }
     | { type: 'SCHEDULE_AUTO_HINT'; payload: { board: Piece[][], timerRef: MutableRefObject<any> } }
     | { type: 'SET_MANUAL_HINT'; payload: number[] | null }
@@ -108,9 +106,4 @@ export type AppAction =
     | { type: 'SET_KEYBOARD_CURSOR'; payload: { row: number; col: number } }
     | { type: 'SET_ABILITY_STATE'; payload: AbilityState }
     | { type: 'UPDATE_ABILITY_METER'; payload: number }
-    | { type: 'RESET_ABILITY_METER' }
-    | { type: 'UPDATE_FATALITY_METER'; payload: number }
-    | { type: 'RESET_FATALITY_METER' }
-    | { type: 'SET_FATALITY_STATE'; payload: FatalityState }
-    | { type: 'TRIGGER_FATALITY_ANIMATION' }
-    | { type: 'FINISH_FATALITY' };
+    | { type: 'RESET_ABILITY_METER' };

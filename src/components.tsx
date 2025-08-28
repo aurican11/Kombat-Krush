@@ -1,6 +1,6 @@
 import React, { memo, useRef, CSSProperties } from 'react';
-import type { GameState, Opponent, CharacterName, Piece, SpecialEffect, TextPopup, AbilityState, FatalityState } from './types';
-import { CHARACTER_DATA, PieceIcons, PLAYER_MAX_HEALTH, ABILITY_METER_MAX, FATALITY_METER_MAX } from './constants';
+import type { GameState, Opponent, CharacterName, Piece, SpecialEffect, TextPopup, AbilityState } from './types';
+import { CHARACTER_DATA, PieceIcons, PLAYER_MAX_HEALTH, ABILITY_METER_MAX } from './constants';
 
 
 export const GamePiece = memo(({ piece, onClick, isSelected, isHinted, isManualHinted, isCursorOn, onSwipe, isAiming, isAimTarget }: { piece: Piece; onClick: () => void; isSelected: boolean, isHinted: boolean, isManualHinted: boolean, isCursorOn: boolean; onSwipe: (direction: 'up' | 'down' | 'left' | 'right') => void; isAiming: boolean; isAimTarget: boolean; }) => {
@@ -69,10 +69,9 @@ type EndGameModalProps = {
     onPlayAgain: () => void;
     onMainMenu: () => void;
     onNextLevel: () => void;
-    isFatalityWin?: boolean;
 };
 
-export const EndGameModal = memo(({ gameState, opponent, maxCombo, score, onPlayAgain, onMainMenu, onNextLevel, isFatalityWin }: EndGameModalProps) => {
+export const EndGameModal = memo(({ gameState, opponent, maxCombo, score, onPlayAgain, onMainMenu, onNextLevel }: EndGameModalProps) => {
     if (!['levelWin', 'ladderComplete', 'gameOver'].includes(gameState)) {
         return null;
     }
@@ -81,7 +80,7 @@ export const EndGameModal = memo(({ gameState, opponent, maxCombo, score, onPlay
         <div className="screen-overlay">
             <div className={`modal-dialog ${gameState}`}>
                  {gameState === 'ladderComplete' && <h2 className="victory-text perfect-victory-text">FLAWLESS VICTORY</h2>}
-                 {gameState === 'levelWin' && (isFatalityWin ? <h2 className="fatality-text">FATALITY</h2> : <h2 className="victory-text">YOU WIN</h2>)}
+                 {gameState === 'levelWin' && <h2 className="victory-text">YOU WIN</h2>}
                  {gameState === 'gameOver' && <h2 className='fatality-text'>GAME OVER</h2>}
 
                 {gameState === 'ladderComplete' ? (
@@ -107,6 +106,30 @@ export const EndGameModal = memo(({ gameState, opponent, maxCombo, score, onPlay
                         </div>
                     </>
                 )}
+            </div>
+        </div>
+    );
+});
+
+export const SettingsModal = memo(({ isOpen, onClose, isMuted, onMuteToggle, onMainMenu }: { isOpen: boolean; onClose: () => void; isMuted: boolean; onMuteToggle: () => void; onMainMenu: () => void; }) => {
+    if (!isOpen) {
+        return null;
+    }
+    return (
+        <div className="screen-overlay">
+            <div className="modal-dialog">
+                <h2>Settings</h2>
+                <div className="settings-modal-buttons">
+                    <button onClick={onMuteToggle}>
+                        {isMuted ? 'Unmute Sound' : 'Mute Sound'}
+                    </button>
+                    <button onClick={onMainMenu}>
+                        Return to Main Menu
+                    </button>
+                    <button onClick={onClose} style={{backgroundColor: '#222', borderColor: '#555'}}>
+                        Resume Game
+                    </button>
+                </div>
             </div>
         </div>
     );
@@ -197,19 +220,17 @@ type GameHeaderProps = {
     hintCooldown: number;
     isProcessing: boolean;
     onMuteClick: () => void;
+    onSettingsClick: () => void;
     isMuted: boolean;
     abilityState: AbilityState;
     onAbilityClick: () => void;
     abilityMeter: number;
-    fatalityState: FatalityState;
-    onFatalityClick: () => void;
-    fatalityMeter: number;
 };
 
 export const GameHeader = memo(({
     playerHealth, opponentHealth, opponentMaxHealth, selectedCharacter, opponentName, playerIsHit, opponentIsHit,
-    onHintClick, isHintOnCooldown, hintCooldown, isProcessing, onMuteClick, isMuted,
-    abilityState, onAbilityClick, abilityMeter, fatalityState, onFatalityClick, fatalityMeter
+    onHintClick, isHintOnCooldown, hintCooldown, isProcessing, onMuteClick, isMuted, onSettingsClick,
+    abilityState, onAbilityClick, abilityMeter
 }: GameHeaderProps) => (
     <header className="game-header">
         <div className={`mobile-player-portrait player-portrait-small ${selectedCharacter || ''} ${playerIsHit ? 'taking-damage' : ''}`}></div>
@@ -229,16 +250,6 @@ export const GameHeader = memo(({
         </div>
         <div className={`mobile-opponent-portrait player-portrait-small ${CHARACTER_DATA[opponentName as CharacterName] ? opponentName?.toLowerCase() : ''} ${opponentIsHit ? 'taking-damage' : ''}`}></div>
 
-        <div className="fatality-meter-container">
-            <div className="fatality-meter-outer">
-                <div className="fatality-meter-inner" style={{width: `${(fatalityMeter / FATALITY_METER_MAX) * 100}%`}}></div>
-            </div>
-             <button className={`fatality-button ${fatalityState}`} onClick={onFatalityClick} disabled={fatalityState !== 'ready' || isProcessing}>
-                FATALITY
-            </button>
-        </div>
-
-
         <div className="controls-and-meters">
             <div className="header-buttons">
                 <button className="hint-button" onClick={onHintClick} disabled={isHintOnCooldown || isProcessing}>
@@ -250,9 +261,17 @@ export const GameHeader = memo(({
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
                     }
                 </button>
+                <button className="settings-button" onClick={onSettingsClick} aria-label="Settings">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23-.09.49 0-.61.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/></svg>
+                </button>
             </div>
             {selectedCharacter && (
                 <div className={`ability-container ${selectedCharacter}`}>
+                    <div className="ability-tooltip" aria-hidden="true">
+                         <strong>{CHARACTER_DATA[selectedCharacter].name} Ability:</strong>
+                         <br />
+                         {CHARACTER_DATA[selectedCharacter].description}
+                     </div>
                     <div className="ability-meter-outer">
                         <div className="ability-meter-inner" style={{width: `${(abilityMeter / ABILITY_METER_MAX) * 100}%`}}></div>
                     </div>
@@ -277,7 +296,7 @@ export const GameBoard = memo(({ board, specialEffects, textPopups, showToasty, 
                     effect.type === 'acid_spit' ? 'effect-acid-spit' :
                     effect.type === 'kano_ball' ? 'effect-kano_ball' :
                     effect.type === 'dragon_fire' ? 'effect-dragon-fire' :
-                    effect.type === 'netherrealm_flame' ? 'effect-netherrealm_flame' :
+                    effect.type === 'netherrealm_flame' ? 'effect-netherrealm-flame' :
                     effect.type === 'ice_shatter' ? 'effect-ice-shatter' : ''
                 }`} style={{ top: `${effect.row * 12.5}%`, left: `${effect.col * 12.5}%` }}>
                     {effect.type === 'ice_shatter' && Array.from({ length: 6 }).map((_, i) => <i key={i} />)}

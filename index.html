@@ -46,7 +46,7 @@
         min-height: 100dvh;
         touch-action: none;
         
-        background-image: url('https://assets-prd.ignimgs.com/2021/02/18/mortal-kombat-ver2-button-1613673221799.jpg');
+        background-image: url('https://images2.alphacoders.com/573/thumb-1920-573197.jpg');
         background-size: cover;
         background-position: center;
         transition: background-image 0.4s ease-in;
@@ -204,6 +204,18 @@
         transform: scale(1.05);
       }
       
+      .settings-modal-buttons {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+        width: 80%;
+        margin: 1.5rem auto 0;
+      }
+      .settings-modal-buttons button {
+        margin-top: 0;
+      }
+
       .victory-text {
         color: var(--scorpion-color);
         text-shadow: 0 0 10px #fff, 0 0 20px var(--scorpion-color);
@@ -419,7 +431,7 @@
         gap: 10px;
       }
       
-      .hint-button, .mute-button, .ability-button, .fatality-button {
+      .hint-button, .mute-button, .ability-button, .settings-button {
         font-family: 'Metal Mania', cursive;
         background: #4a4a4a;
         border: 1px solid #777;
@@ -435,7 +447,7 @@
       }
       .hint-button:hover:not(:disabled) { background-color: #666; }
       .hint-button:disabled { opacity: 0.5; cursor: not-allowed; background-color: #333; }
-      .mute-button {
+      .mute-button, .settings-button {
         background: none;
         padding: 0;
         color: #ccc;
@@ -443,8 +455,9 @@
         height: 28px;
         border: none;
       }
-      .mute-button:hover { color: #fff; }
-      .mute-button svg { width: 100%; height: 100%; filter: drop-shadow(0 0 2px black); }
+      .mute-button:hover, .settings-button:hover { color: #fff; }
+      .settings-button:hover { transform: rotate(45deg); }
+      .mute-button svg, .settings-button svg { width: 100%; height: 100%; filter: drop-shadow(0 0 2px black); }
 
       /* --- HEALTH BARS --- */
       .health-bars-container {
@@ -456,7 +469,6 @@
         border: 2px solid #333;
         border-radius: 5px;
         flex-grow: 1;
-        order: 1;
       }
       .health-bar-wrapper { flex: 1; position: relative; text-align: center; }
       .health-bar-label {
@@ -477,8 +489,8 @@
       .health-bar-inner.player { background: linear-gradient(90deg, #1e88e5, #90caf9); }
       .health-bar-inner.opponent { background: linear-gradient(270deg, var(--fatality-color), #ff8a80); }
 
-      /* --- ABILITY & FATALITY METERS --- */
-      .ability-container { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+      /* --- ABILITY METER --- */
+      .ability-container { position: relative; display: flex; flex-direction: column; align-items: center; gap: 5px; }
       .ability-button { font-size: 1rem; background: #333; color: #999; cursor: not-allowed; min-width: 70px; }
       .ability-button.ready {
         background: #4a4a4a;
@@ -498,53 +510,41 @@
       .ability-container.kano .ability-meter-inner { background: var(--kano-color); }
       .ability-container.liukang .ability-meter-inner { background: var(--liukang-color); }
       
-      .fatality-meter-container {
-        width: 100%;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 5px;
-        order: 2;
-      }
-      .fatality-meter-outer {
-        height: 15px;
-        width: 100%;
+      .ability-tooltip {
+        position: absolute;
+        bottom: calc(100% + 5px);
+        left: 50%;
+        transform: translateX(-50%);
         background-color: #111;
-        border: 2px solid #555;
+        color: #eee;
+        padding: 8px 12px;
         border-radius: 5px;
-        padding: 2px;
-        box-shadow: inset 0 0 5px #000;
+        border: 1px solid #555;
+        font-size: 0.9rem;
+        width: 220px;
+        max-width: 60vw;
+        text-align: center;
+        z-index: 10;
+        visibility: hidden;
+        opacity: 0;
+        transition: opacity 0.2s ease, visibility 0.2s ease;
+        pointer-events: none;
+        line-height: 1.4;
+        font-family: 'Cinzel', serif;
+        box-shadow: 0 0 10px rgba(0,0,0,0.8);
       }
-      .fatality-meter-inner {
-        height: 100%;
-        background: linear-gradient(90deg, #6a0000, var(--fatality-color));
-        border-radius: 2px;
-        transition: width 0.3s ease-in-out;
-        box-shadow: 0 0 8px var(--fatality-color);
-      }
-      .fatality-button {
+      .ability-tooltip strong {
+        font-family: 'Metal Mania', cursive;
+        color: var(--scorpion-color);
         font-size: 1.1rem;
-        padding: 5px 15px;
-        background: #333;
-        color: #777;
-        border-color: #555;
-        cursor: not-allowed;
+        display: block;
+        margin-bottom: 4px;
       }
-      .fatality-button.ready {
-        background-color: var(--fatality-color);
-        color: #fff;
-        border-color: #fff;
-        cursor: pointer;
-        text-shadow: 0 0 5px #fff;
-        box-shadow: 0 0 15px var(--fatality-color);
-        animation: fatality-ready-pulse 1.2s infinite;
+      .ability-container:hover .ability-tooltip,
+      .ability-container:focus-within .ability-tooltip {
+          visibility: visible;
+          opacity: 1;
       }
-       @keyframes fatality-ready-pulse { 
-         50% { 
-           transform: scale(1.05);
-           box-shadow: 0 0 25px var(--fatality-color), 0 0 10px #fff; 
-         } 
-       }
 
       /* --- PLAYER & OPPONENT INFO --- */
       .player-portrait, .opponent-portrait {
@@ -615,7 +615,7 @@
         padding: 5px;
         pointer-events: none;
         transition: background 0.5s ease, border-color 0.5s ease;
-        background-image: url('https://i.pinimg.com/736x/46/d1/72/46d17233c2190edb7efbfe27f588c8db.jpg');
+        background-image: url('https://images2.alphacoders.com/573/thumb-1920-573197.jpg');
         background-size: cover;
         background-position: center;
       }
@@ -675,14 +675,6 @@
         0% { transform: scale(1); }
         50% { transform: scale(1.1); filter: brightness(1.5); box-shadow: inset 0 0 10px var(--subzero-color); }
         100% { transform: scale(0) rotate(360deg); opacity: 0; }
-      }
-      .game-piece.fatality {
-        animation: fatality-piece-explode 1.5s cubic-bezier(0.68, -0.55, 0.27, 1.55) forwards;
-      }
-      @keyframes fatality-piece-explode {
-        0% { transform: scale(1) rotate(0); opacity: 1; filter: brightness(1); }
-        50% { transform: scale(1.5) rotate(180deg); opacity: 1; filter: brightness(5) drop-shadow(0 0 15px var(--fatality-color)); }
-        100% { transform: scale(0) rotate(360deg); opacity: 0; filter: brightness(1); }
       }
 
       /* Special Piece Indicators */
@@ -790,12 +782,10 @@
         }
         .mobile-player-portrait, .mobile-opponent-portrait {
           display: block;
-          order: 0;
         }
         .health-bar-outer { height: 25px; }
 
         .controls-and-meters {
-          order: 3; /* Move to bottom of header */
           justify-content: space-around;
         }
         .ability-container {
@@ -840,9 +830,6 @@
          }
         .mobile-info-footer .ladder-portrait {
           width: 35px; height: 35px;
-        }
-        .fatality-button {
-          font-size: 1rem;
         }
         .hint-button, .ability-button {
           font-size: 0.9rem;

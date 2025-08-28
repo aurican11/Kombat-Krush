@@ -1,5 +1,6 @@
 import React from 'react';
-import { GRID_SIZE, PIECE_TYPES, ANIMATION_DELAY, LOCAL_BANTER, ABILITY_METER_MAX, FATALITY_METER_MAX } from './constants';
+// FIX: Removed FATALITY_METER_MAX as it is not exported from constants and was unused.
+import { GRID_SIZE, PIECE_TYPES, ANIMATION_DELAY, LOCAL_BANTER, ABILITY_METER_MAX } from './constants';
 import type { Piece, PieceType, Match, SpecialType, CharacterName, AppState, AppAction, Opponent } from './types';
 import { Dispatch } from 'react';
 
@@ -341,15 +342,88 @@ export const processGameLoop = async ({ state, dispatch, playSoundMuted, pieceId
         dispatch({ type: 'SET_BOARD', payload: boardCopy });
         await sleep(ANIMATION_DELAY * 2);
     }
-    // TODO: Handle initial 'ability' action here by modifying boardCopy directly
 
     // --- Main Match & Cascade Loop ---
     let changedInLoop = true;
     let currentCombo = 1;
+    let isInitialAbility = initialAction.type === 'ability';
     
     while (changedInLoop) {
         changedInLoop = false;
         let matches = findMatches(boardCopy);
+
+        // FIX: Add type guard to narrow initialAction type
+        if (isInitialAbility && initialAction.type === 'ability') {
+            isInitialAbility = false; // Run only once
+            anyMatchesOccurred = true;
+            dispatch({ type: 'RESET_ABILITY_METER' });
+            const { selectedCharacter } = state;
+
+            if (selectedCharacter === 'liukang') {
+                 const playerPieceType = selectedCharacter;
+                 const otherPieceTypes = [...new Set(boardCopy.flat().map(p => p.type).filter(t => t && t !== playerPieceType))] as CharacterName[];
+                 if (otherPieceTypes.length > 0) {
+                     const typeToConvert = otherPieceTypes[Math.floor(Math.random() * otherPieceTypes.length)];
+                     boardCopy = boardCopy.map(row => row.map(p => {
+                         if (p.type === typeToConvert) {
+                             const effectId = Date.now() + p.id;
+                             dispatch({ type: 'ADD_SPECIAL_EFFECT', payload: { effect: { id: effectId, type: 'dragon_fire', row: p.row, col: p.col } } });
+                             setTimeout(() => dispatch({ type: 'REMOVE_SPECIAL_EFFECT', payload: { id: effectId } }), 500);
+                             return { ...p, type: playerPieceType };
+                         }
+                         return p;
+                     }));
+                 }
+                 await sleep(ANIMATION_DELAY * 2);
+                 matches = findMatches(boardCopy); // Re-evaluate matches after conversion
+            } else if (selectedCharacter) {
+                let abilityPieces: Piece[] = [];
+                if (selectedCharacter === 'raiden') {
+                    const startRow = Math.floor(Math.random() * (GRID_SIZE - 1));
+                    const startCol = Math.floor(Math.random() * (GRID_SIZE - 1));
+                    abilityPieces.push(boardCopy[startRow][startCol], boardCopy[startRow+1][startCol], boardCopy[startRow][startCol+1], boardCopy[startRow+1][startCol+1]);
+                    const effectId = Date.now();
+                    dispatch({ type: 'ADD_SPECIAL_EFFECT', payload: { effect: { id: effectId, type: 'lightning', row: startRow + 0.5, col: startCol + 0.5 } } });
+                    setTimeout(() => dispatch({ type: 'REMOVE_SPECIAL_EFFECT', payload: { id: effectId } }), 600);
+                } else if (selectedCharacter === 'reptile') {
+                    const col = Math.floor(Math.random() * GRID_SIZE);
+                    for(let r = 0; r < GRID_SIZE; r++) abilityPieces.push(boardCopy[r][col]);
+                    const effectId = Date.now();
+                    dispatch({ type: 'ADD_SPECIAL_EFFECT', payload: { effect: { id: effectId, type: 'acid_spit', row: 0, col } } });
+                    setTimeout(() => dispatch({ type: 'REMOVE_SPECIAL_EFFECT', payload: { id: effectId } }), 800);
+                } else if (selectedCharacter === 'kano') {
+                    const row = Math.floor(Math.random() * GRID_SIZE);
+                    for(let c = 0; c < GRID_SIZE; c++) abilityPieces.push(boardCopy[row][c]);
+                    const effectId = Date.now();
+                    dispatch({ type: 'ADD_SPECIAL_EFFECT', payload: { effect: { id: effectId, type: 'kano_ball', row, col: 0 } } });
+                    setTimeout(() => dispatch({ type: 'REMOVE_SPECIAL_EFFECT', payload: { id: effectId } }), 800);
+                } else if (selectedCharacter === 'subzero' && initialAction.row !== undefined && initialAction.col !== undefined) {
+                    const { row, col } = initialAction;
+                    const startRow = Math.min(row, GRID_SIZE - 2);
+                    const startCol = Math.min(col, GRID_SIZE - 2);
+                    for(let r = startRow; r < startRow + 2; r++) for(let c = startCol; c < startCol + 2; c++) abilityPieces.push(boardCopy[r][c]);
+                    const effectId = Date.now();
+                    dispatch({ type: 'ADD_SPECIAL_EFFECT', payload: { effect: { id: effectId, type: 'ice_shatter', row: startRow + 0.5, col: startCol + 0.5 } } });
+                    setTimeout(() => dispatch({ type: 'REMOVE_SPECIAL_EFFECT', payload: { id: effectId } }), 800);
+                } else if (selectedCharacter === 'scorpion' && initialAction.row !== undefined && initialAction.col !== undefined) {
+                    const targetType = boardCopy[initialAction.row][initialAction.col].type;
+                    if(targetType) {
+                        boardCopy.flat().forEach(p => {
+                            if (p.type === targetType) {
+                                abilityPieces.push(p);
+                                const effectId = Date.now() + p.id;
+                                dispatch({ type: 'ADD_SPECIAL_EFFECT', payload: { effect: { id: effectId, type: 'netherrealm_flame', row: p.row, col: p.col } } });
+                                setTimeout(() => dispatch({ type: 'REMOVE_SPECIAL_EFFECT', payload: { id: effectId } }), 500);
+                            }
+                        });
+                    }
+                }
+                if (abilityPieces.length > 0) {
+                    matches.push({ pieces: abilityPieces, type: 'col', length: abilityPieces.length });
+                }
+            }
+        }
+
 
         if (matches.length > 0) {
             anyMatchesOccurred = true;

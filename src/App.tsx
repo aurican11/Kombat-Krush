@@ -1,7 +1,7 @@
 import React, { useEffect, useCallback, useRef, useReducer } from 'react';
-import { StartScreen, CharacterSelectScreen, EndGameModal, PlayerProfile, OpponentProfile, GameHeader, GameBoard, MobileFooter } from './components';
+import { StartScreen, CharacterSelectScreen, EndGameModal, PlayerProfile, OpponentProfile, GameHeader, GameBoard, MobileFooter, SettingsModal } from './components';
 import { playSound, createInitialBoard, processGameLoop } from './utils';
-import { LADDER_DATA } from './constants';
+import { LADDER_DATA, CHARACTER_DATA } from './constants';
 import type { CharacterName } from './types';
 import { initialState, gameReducer } from './reducer';
 
@@ -13,8 +13,8 @@ const App = () => {
         movesUntilAttack, opponentBanter, playerIsHit, opponentIsHit, selectedPiece, isProcessing,
         combo, textPopups, autoHintIds, manualHintIds, isHintOnCooldown, hintCooldown, comboKey,
         isMuted, showToasty, specialEffects, keyboardCursor, selectedCharacter, abilityMeter,
-        abilityState, fatalityMeter, fatalityState, isFatalityWin, aimTarget, playerBanter, maxCombo,
-        score
+        abilityState, aimTarget, playerBanter, maxCombo,
+        score, showSettingsModal
     } = state;
 
     const pieceIdCounter = useRef(0);
@@ -137,6 +137,12 @@ const App = () => {
         
         if (selectedPiece) {
             const { row: selectedRow, col: selectedCol } = selectedPiece;
+            
+            if (row === selectedRow && col === selectedCol) {
+                dispatch({ type: 'SELECT_PIECE', payload: null });
+                return;
+            }
+
             const distance = Math.abs(row - selectedRow) + Math.abs(col - selectedCol);
 
             if (distance === 1) { 
@@ -192,16 +198,6 @@ const App = () => {
     }, [state, playSoundMuted, generatePlayerBanter]); // Depends on whole state
 
 
-    const handleFatalityClick = useCallback(async () => {
-        if (fatalityState !== 'ready' || isProcessing || gameState !== 'playing') return;
-        dispatch({ type: 'SET_PROCESSING', payload: true });
-        playSoundMuted('fatality');
-        dispatch({ type: 'TRIGGER_FATALITY_ANIMATION' });
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        dispatch({ type: 'OPPONENT_BANTER', payload: { event: 'onDefeat' } });
-        dispatch({ type: 'FINISH_FATALITY' });
-    }, [fatalityState, isProcessing, gameState, playSoundMuted]);
-
     const handleKeyDown = useCallback((e: KeyboardEvent) => {
         if (gameState !== 'playing' || isProcessing) return;
     
@@ -220,15 +216,13 @@ const App = () => {
                 return;
             case 'a': // Ability key
             case 'A': e.preventDefault(); handleAbilityClick(); break;
-            case 'f': // Fatality key
-            case 'F': e.preventDefault(); handleFatalityClick(); break;
         }
     
         if (newRow !== keyboardCursor.row || newCol !== keyboardCursor.col) {
             dispatch({ type: 'SET_KEYBOARD_CURSOR', payload: { row: newRow, col: newCol } });
         }
     
-    }, [gameState, isProcessing, keyboardCursor, handlePieceClick, handleAbilityClick, handleFatalityClick]);
+    }, [gameState, isProcessing, keyboardCursor, handlePieceClick, handleAbilityClick]);
     
     useEffect(() => {
         window.addEventListener('keydown', handleKeyDown);
@@ -256,7 +250,14 @@ const App = () => {
                 onPlayAgain={handleGoToCharacterSelect}
                 onMainMenu={handleGoToMainMenu}
                 onNextLevel={handleNextLevel} 
-                isFatalityWin={isFatalityWin}
+            />
+            
+            <SettingsModal
+                isOpen={showSettingsModal}
+                onClose={() => dispatch({ type: 'TOGGLE_SETTINGS_MODAL' })}
+                isMuted={isMuted}
+                onMuteToggle={() => dispatch({ type: 'TOGGLE_MUTE' })}
+                onMainMenu={handleGoToMainMenu}
             />
 
             <div className="game-ui-wrapper" aria-hidden={!['playing'].includes(gameState)}>
@@ -270,7 +271,7 @@ const App = () => {
                     <h1 className="main-title">Kombat Krush</h1>
                     <GameHeader
                         playerHealth={playerHealth}
-                        opponentHealth={opponent ? opponent.health : 100}
+                        opponentHealth={opponentHealth}
                         opponentMaxHealth={opponent ? opponent.health : 100}
                         selectedCharacter={selectedCharacter}
                         opponentName={opponent?.name}
@@ -282,12 +283,10 @@ const App = () => {
                         isMuted={isMuted}
                         abilityState={abilityState}
                         abilityMeter={abilityMeter}
-                        fatalityState={fatalityState}
-                        fatalityMeter={fatalityMeter}
                         onHintClick={handleHintClick}
                         onMuteClick={() => dispatch({ type: 'TOGGLE_MUTE' })}
+                        onSettingsClick={() => dispatch({ type: 'TOGGLE_SETTINGS_MODAL' })}
                         onAbilityClick={handleAbilityClick}
-                        onFatalityClick={handleFatalityClick}
                     />
 
                     {combo >= 4 && (

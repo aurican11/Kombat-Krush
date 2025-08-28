@@ -9,7 +9,6 @@ export const PLAYER_MAX_HEALTH = 100;
 export const HINT_DELAY = 5000; // ms before showing a hint
 export const HINT_COOLDOWN_SECONDS = 15;
 export const ABILITY_METER_MAX = 18; // Pieces to match to fill meter
-export const FATALITY_METER_MAX = 250; // Damage to deal to fill meter
 
 export const LADDER_DATA: Opponent[] = [
     { name: 'Kano', health: 100, attack: 15, movesPerAttack: 5, pieceType: 'kano' },
@@ -44,12 +43,30 @@ export const PieceIcons: { [key in CharacterName]: React.FC } = {
 };
 
 export const CHARACTER_DATA: { [key in CharacterName]: { name: string, description: string } } = {
-    scorpion: { name: 'Scorpion', description: 'Ability: Netherrealm Flames - Select a piece to destroy it and all others of the same type.'},
-    subzero: { name: 'Sub-Zero', description: 'Ability: Ice Ball - Freeze and destroy a 4-piece cluster.' },
-    raiden: { name: 'Raiden', description: 'Ability: Lightning Strike - Clear a random 2x2 area.' },
-    reptile: { name: 'Reptile', description: 'Ability: Acid Spit - Clear a random column.' },
-    kano: { name: 'Kano', description: 'Ability: Kano Ball - Clear a random row.' },
-    liukang: { name: 'Liu Kang', description: 'Ability: Dragon Fire - Convert a random piece type to your own.' },
+    scorpion: { 
+        name: 'Scorpion', 
+        description: 'Ability: Netherrealm Flames - Select a piece to destroy it and all others of the same type.',
+    },
+    subzero: { 
+        name: 'Sub-Zero', 
+        description: 'Ability: Ice Ball - Freeze and destroy a 4-piece cluster.',
+    },
+    raiden: { 
+        name: 'Raiden', 
+        description: 'Ability: Lightning Strike - Clear a random 2x2 area.',
+    },
+    reptile: { 
+        name: 'Reptile', 
+        description: 'Ability: Acid Spit - Clear a random column.',
+    },
+    kano: { 
+        name: 'Kano', 
+        description: 'Ability: Kano Ball - Clear a random row.',
+    },
+    liukang: { 
+        name: 'Liu Kang', 
+        description: 'Ability: Dragon Fire - Convert a random piece type to your own.',
+    },
 };
 
 // --- Local Banter Data ---

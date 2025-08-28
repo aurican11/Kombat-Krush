@@ -1,5 +1,5 @@
-import type { AppState, AppAction, Opponent, Piece } from './types';
-import { PLAYER_MAX_HEALTH, ABILITY_METER_MAX, FATALITY_METER_MAX, HINT_COOLDOWN_SECONDS, LOCAL_BANTER } from './constants';
+import type { AppState, AppAction } from './types';
+import { PLAYER_MAX_HEALTH, ABILITY_METER_MAX, HINT_COOLDOWN_SECONDS, LOCAL_BANTER } from './constants';
 import { findAPossibleMove } from './utils';
 
 export const initialState: AppState = {
@@ -32,17 +32,15 @@ export const initialState: AppState = {
     selectedCharacter: null,
     abilityMeter: 0,
     abilityState: 'idle',
-    fatalityMeter: 0,
-    fatalityState: 'idle',
-    isFatalityWin: false,
     aimTarget: null,
     playerBanter: null,
+    showSettingsModal: false,
 };
 
 export function gameReducer(state: AppState, action: AppAction): AppState {
     switch (action.type) {
         case 'SET_GAME_STATE':
-            return { ...state, gameState: action.payload };
+            return { ...state, gameState: action.payload, showSettingsModal: false };
         case 'RESET_STATE':
             return initialState;
         case 'START_GAME': {
@@ -81,9 +79,7 @@ export function gameReducer(state: AppState, action: AppAction): AppState {
                 movesUntilAttack: nextOpponent.movesPerAttack,
                 abilityMeter: 0,
                 abilityState: 'idle',
-                fatalityMeter: 0,
-                fatalityState: 'idle',
-                isFatalityWin: false,
+                showSettingsModal: false,
                 playerBanter: { key: Date.now(), text: playerIdleBanterOptions[Math.floor(Math.random() * playerIdleBanterOptions.length)] || '' },
                 opponentBanter: { key: Date.now() + 1, text: opponentIdleBanterOptions[Math.floor(Math.random() * opponentIdleBanterOptions.length)] || '' },
             };
@@ -95,7 +91,6 @@ export function gameReducer(state: AppState, action: AppAction): AppState {
         case 'DEAL_DAMAGE': {
             const totalDamage = action.payload;
             const newOpponentHealth = Math.max(0, state.opponentHealth - totalDamage);
-            const newFatalityMeter = Math.min(FATALITY_METER_MAX, state.fatalityMeter + totalDamage);
             const isWin = newOpponentHealth <= 0;
             
             let newGameState = state.gameState;
@@ -112,8 +107,6 @@ export function gameReducer(state: AppState, action: AppAction): AppState {
                 opponentHealth: newOpponentHealth,
                 opponentIsHit: true,
                 score: state.score + totalDamage,
-                fatalityMeter: newFatalityMeter,
-                fatalityState: newFatalityMeter >= FATALITY_METER_MAX ? 'ready' : state.fatalityState,
                 gameState: newGameState,
                 opponentBanter: newBanter
             };
@@ -141,6 +134,7 @@ export function gameReducer(state: AppState, action: AppAction): AppState {
                     movesUntilAttack: state.opponent.movesPerAttack,
                     isProcessing: isGameOver,
                     gameState: isGameOver ? 'gameOver' : state.gameState,
+                    showSettingsModal: isGameOver ? false : state.showSettingsModal,
                     opponentBanter: { key: Date.now(), text: tauntText },
                 };
             }
@@ -201,6 +195,8 @@ export function gameReducer(state: AppState, action: AppAction): AppState {
         }
         case 'TOGGLE_MUTE':
             return { ...state, isMuted: !state.isMuted };
+        case 'TOGGLE_SETTINGS_MODAL':
+            return { ...state, showSettingsModal: !state.showSettingsModal };
         case 'CLEAR_HINTS':
             return { ...state, autoHintIds: null, manualHintIds: null };
         case 'SCHEDULE_AUTO_HINT': {
@@ -241,18 +237,6 @@ export function gameReducer(state: AppState, action: AppAction): AppState {
         }
         case 'RESET_ABILITY_METER':
             return { ...state, abilityMeter: 0, abilityState: 'idle' };
-        case 'UPDATE_FATALITY_METER': {
-            const newMeter = Math.min(state.fatalityMeter + action.payload, FATALITY_METER_MAX);
-            return { ...state, fatalityMeter: newMeter, fatalityState: newMeter >= FATALITY_METER_MAX ? 'ready' : state.fatalityState };
-        }
-        case 'RESET_FATALITY_METER':
-             return { ...state, fatalityMeter: 0, fatalityState: 'idle' };
-        case 'SET_FATALITY_STATE':
-            return { ...state, fatalityState: action.payload };
-        case 'TRIGGER_FATALITY_ANIMATION':
-            return { ...state, board: state.board.map(row => row.map(p => ({ ...p, state: 'fatality' as const }))) };
-        case 'FINISH_FATALITY':
-            return { ...state, isFatalityWin: true, gameState: state.currentLadderLevel >= state.shuffledLadder.length - 1 ? 'ladderComplete' : 'levelWin' };
         default:
             return state;
     }
