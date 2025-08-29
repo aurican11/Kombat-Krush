@@ -98,9 +98,8 @@ export type AppAction =
     | { type: 'TOGGLE_MUTE' }
     | { type: 'TOGGLE_SETTINGS_MODAL' }
     | { type: 'CLEAR_HINTS' }
-    | { type: 'SCHEDULE_AUTO_HINT'; payload: { board: Piece[][], timerRef: MutableRefObject<any> } }
+    | { type: 'SET_AUTO_HINT'; payload: number[] | null }
     | { type: 'SET_MANUAL_HINT'; payload: number[] | null }
-    | { type: 'REQUEST_MANUAL_HINT', payload: { board: Piece[][] } }
     | { type: 'SET_HINT_COOLDOWN'; payload: { onCooldown: boolean; seconds: number } }
     | { type: 'DECREMENT_HINT_COOLDOWN' }
     | { type: 'SET_KEYBOARD_CURSOR'; payload: { row: number; col: number } }

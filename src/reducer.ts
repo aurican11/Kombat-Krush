@@ -1,6 +1,6 @@
-import type { AppState, AppAction } from './types';
-import { PLAYER_MAX_HEALTH, ABILITY_METER_MAX, HINT_COOLDOWN_SECONDS, LOCAL_BANTER } from './constants';
-import { findAPossibleMove } from './utils';
+import type { AppState, AppAction } from './types.ts';
+import { PLAYER_MAX_HEALTH, ABILITY_METER_MAX, HINT_COOLDOWN_SECONDS, LOCAL_BANTER } from './constants.tsx';
+import { findAPossibleMove } from './utils.ts';
 
 export const initialState: AppState = {
     board: [],
@@ -199,28 +199,8 @@ export function gameReducer(state: AppState, action: AppAction): AppState {
             return { ...state, showSettingsModal: !state.showSettingsModal };
         case 'CLEAR_HINTS':
             return { ...state, autoHintIds: null, manualHintIds: null };
-        case 'SCHEDULE_AUTO_HINT': {
-            const { board, timerRef } = action.payload;
-            timerRef.current = setTimeout(() => {
-                const move = findAPossibleMove(board);
-                if (move) {
-                    // This is a side effect, ideally we'd dispatch an action from here
-                    // but that requires passing dispatch into the effect setup.
-                    // For now, this is a limitation. A better way would be a thunk-like middleware.
-                    // Let's just update the state directly here as a simplification.
-                     (document.getElementById('root') as any)?.__app_dispatch?.({ type: 'SET_MANUAL_HINT', payload: [move[0].id, move[1].id] });
-                }
-            }, 5000);
-            return state; // No immediate state change
-        }
-        case 'REQUEST_MANUAL_HINT': {
-            const move = findAPossibleMove(action.payload.board);
-            if (move) {
-                setTimeout(() => (document.getElementById('root') as any)?.__app_dispatch?.({ type: 'SET_MANUAL_HINT', payload: null }), 5000);
-                return { ...state, manualHintIds: [move[0].id, move[1].id], isHintOnCooldown: true, hintCooldown: HINT_COOLDOWN_SECONDS };
-            }
-            return state;
-        }
+        case 'SET_AUTO_HINT':
+            return { ...state, autoHintIds: action.payload };
         case 'SET_MANUAL_HINT':
              return { ...state, manualHintIds: action.payload };
         case 'SET_HINT_COOLDOWN':

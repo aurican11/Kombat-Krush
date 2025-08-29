@@ -1,9 +1,9 @@
 import React, { useEffect, useCallback, useRef, useReducer } from 'react';
-import { StartScreen, CharacterSelectScreen, EndGameModal, PlayerProfile, OpponentProfile, GameHeader, GameBoard, SettingsModal, MobileHeader, MobileFooter } from './components';
-import { playSound, createInitialBoard, processGameLoop } from './utils';
-import { LADDER_DATA, CHARACTER_DATA } from './constants';
-import type { CharacterName } from './types';
-import { initialState, gameReducer } from './reducer';
+import { StartScreen, CharacterSelectScreen, EndGameModal, PlayerProfile, OpponentProfile, GameHeader, GameBoard, SettingsModal, MobileHeader, MobileFooter } from './components.tsx';
+import { playSound, createInitialBoard, processGameLoop, findAPossibleMove } from './utils.ts';
+import { LADDER_DATA, CHARACTER_DATA, HINT_DELAY, HINT_COOLDOWN_SECONDS } from './constants.tsx';
+import type { CharacterName } from './types.ts';
+import { initialState, gameReducer } from './reducer.ts';
 
 
 const App = () => {
@@ -105,13 +105,18 @@ const App = () => {
 
     useEffect(() => {
         if (hintTimerId.current) clearTimeout(hintTimerId.current);
-        if (gameState === 'playing' && !isProcessing) {
-             dispatch({ type: 'SCHEDULE_AUTO_HINT', payload: { board, timerRef: hintTimerId }});
+        if (gameState === 'playing' && !isProcessing && !selectedPiece) {
+            hintTimerId.current = setTimeout(() => {
+                const move = findAPossibleMove(board);
+                if (move) {
+                    dispatch({ type: 'SET_AUTO_HINT', payload: [move[0].id, move[1].id] });
+                }
+            }, HINT_DELAY);
         }
         return () => {
             if (hintTimerId.current) clearTimeout(hintTimerId.current);
         };
-    }, [board, isProcessing, gameState]);
+    }, [board, isProcessing, gameState, selectedPiece]);
 
     useEffect(() => {
         if (hintCooldown > 0) {
@@ -201,7 +206,17 @@ const App = () => {
     const handleHintClick = () => {
         if (isProcessing || isHintOnCooldown || gameState !== 'playing') return;
         if (hintTimerId.current) clearTimeout(hintTimerId.current);
-        dispatch({ type: 'REQUEST_MANUAL_HINT', payload: { board } });
+        dispatch({ type: 'CLEAR_HINTS' });
+
+        const move = findAPossibleMove(board);
+        if (move) {
+            dispatch({ type: 'SET_MANUAL_HINT', payload: [move[0].id, move[1].id] });
+            dispatch({ type: 'SET_HINT_COOLDOWN', payload: { onCooldown: true, seconds: HINT_COOLDOWN_SECONDS } });
+            
+            setTimeout(() => {
+                dispatch({ type: 'SET_MANUAL_HINT', payload: null });
+            }, 5000);
+        }
     };
 
     const handleAbilityClick = useCallback(async () => {

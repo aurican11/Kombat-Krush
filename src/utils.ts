@@ -1,7 +1,7 @@
 import React from 'react';
 // FIX: Removed FATALITY_METER_MAX as it is not exported from constants and was unused.
-import { GRID_SIZE, PIECE_TYPES, ANIMATION_DELAY, LOCAL_BANTER, ABILITY_METER_MAX } from './constants';
-import type { Piece, PieceType, Match, SpecialType, CharacterName, AppState, AppAction, Opponent } from './types';
+import { GRID_SIZE, PIECE_TYPES, ANIMATION_DELAY, LOCAL_BANTER, ABILITY_METER_MAX } from './constants.tsx';
+import type { Piece, PieceType, Match, SpecialType, CharacterName, AppState, AppAction, Opponent } from './types.ts';
 import { Dispatch } from 'react';
 
 // --- Audio Engine ---

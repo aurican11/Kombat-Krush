@@ -1,5 +1,5 @@
 import React from 'react';
-import type { CharacterName, Opponent } from './types';
+import type { CharacterName, Opponent } from './types.ts';
 
 // --- Game Constants ---
 export const GRID_SIZE = 8;
