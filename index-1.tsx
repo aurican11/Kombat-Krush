@@ -1,3 +1,4 @@
+// Fix: Restored full file content to fix truncation errors.
 import React, { useEffect, useCallback, useRef, useReducer, memo, CSSProperties, Dispatch, MutableRefObject } from 'react';
 import { createRoot } from 'react-dom/client';
 
