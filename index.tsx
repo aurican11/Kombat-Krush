@@ -90,6 +90,7 @@ type AppAction =
     | { type: 'SELECT_PIECE'; payload: { row: number; col: number } | null }
     | { type: 'SET_BOARD'; payload: Piece[][] }
     | { type: 'DEAL_DAMAGE'; payload: number }
+    | { type: 'SET_PLAYER_HEALTH'; payload: number }
     | { type: 'PROCESS_OPPONENT_TURN' }
     | { type: 'SET_PLAYER_IS_HIT'; payload: boolean }
     | { type: 'SET_OPPONENT_IS_HIT'; payload: boolean }
@@ -702,12 +703,13 @@ const handleMatchClearingAndSpecials = (
 };
 
 
-const processGameLoop = async ({ state, dispatch, playSoundMuted, pieceIdCounter, popupIdCounter, initialAction }: ProcessParams): Promise<void> => {
+const processGameLoop = async ({ state, dispatch, playSoundMuted, pieceIdCounter, popupIdCounter, initialAction }: ProcessParams): Promise<boolean> => {
     dispatch({ type: 'SET_PROCESSING', payload: true });
     
     let boardCopy = state.board.map(row => [...row]);
     let swapLocation: { row: number, col: number } | null = null;
     let anyMatchesOccurred = false;
+    let opponentBanteredOnHit = false;
     
     // --- Initial Action (Swap or Ability) ---
     if (initialAction.type === 'swap') {
@@ -865,6 +867,11 @@ const processGameLoop = async ({ state, dispatch, playSoundMuted, pieceIdCounter
             }
             playSoundMuted('match', { combo: currentCombo });
 
+            if (!opponentBanteredOnHit && state.gameState === 'playing') {
+                dispatch({ type: 'OPPONENT_BANTER', payload: { event: 'hit' } });
+                opponentBanteredOnHit = true;
+            }
+
             const isAbilityTrigger = initialAction.type === 'ability' && currentCombo === 1;
 
             const { allPiecesToClear, specialToCreate, specialDamage } = handleMatchClearingAndSpecials(boardCopy, matches, swapLocation, dispatch);
@@ -930,36 +937,32 @@ const processGameLoop = async ({ state, dispatch, playSoundMuted, pieceIdCounter
     } else {
         dispatch({ type: 'SET_PROCESSING', payload: false });
     }
+
+    return anyMatchesOccurred;
 };
 
 // --- BUNDLED FROM: src/tutorial.ts ---
 
 interface TutorialStep {
     text: string;
-    requiredAction?: {
-        type: 'swap';
-        from: { row: number; col: number };
-        to: { row: number; col: number };
-    } | {
-        type: 'ability';
-    } | {
-        type: 'ability_target';
-        row: number;
-        col: number;
-    };
-    showNextButton?: boolean;
-    onStepStart?: (dispatch: Dispatch<AppAction>) => void;
+    onStepStart?: (dispatch: Dispatch<AppAction>, popupIdCounter: MutableRefObject<number>) => void;
     boardKey?: keyof typeof TUTORIAL_BOARDS;
 }
 
-type TutorialPieceDef = CharacterName | null | { type: CharacterName; special: SpecialType };
+type TutorialPieceDef = CharacterName | null | { type: CharacterName; special: SpecialType } | { type: CharacterName; state: 'matched' };
 
 const createTutorialBoard = (layout: TutorialPieceDef[][], idCounter: React.MutableRefObject<number>): Piece[][] => {
     idCounter.current = 0;
     return layout.map((row, r) =>
         row.map((def, c) => {
-            if (def && typeof def === 'object' && 'type' in def) {
-                return createPiece(r, c, def.type, idCounter, def.special);
+            if (def && typeof def === 'object') {
+                 if ('type' in def && 'special' in def) {
+                    return createPiece(r, c, def.type, idCounter, def.special);
+                } else if ('type' in def && 'state' in def) {
+                    const piece = createPiece(r, c, def.type, idCounter);
+                    piece.state = def.state;
+                    return piece;
+                }
             }
             return createPiece(r, c, def as CharacterName | null, idCounter);
         })
@@ -968,53 +971,103 @@ const createTutorialBoard = (layout: TutorialPieceDef[][], idCounter: React.Muta
 
 // prettier-ignore
 const TUTORIAL_BOARDS: { [key: string]: TutorialPieceDef[][] } = {
-    step1: [
+    start: [
         ['scorpion', 'subzero',  'reptile', 'kano',    'liukang', 'scorpion','kano',    'raiden'  ],
         ['reptile',  'scorpion', 'kano',    'raiden',  'liukang', 'subzero', 'reptile', 'scorpion'],
         ['kano',     'liukang',  'reptile', 'raiden',  'subzero', 'raiden',  'liukang', 'subzero' ],
-        ['raiden',   'subzero',  'scorpion','raiden',  'kano',    'reptile', 'scorpion','kano'    ],
-        ['scorpion', 'kano',     'raiden',  'subzero', 'raiden',  'liukang', 'subzero', 'raiden'  ], // Swap FROM here (4,3)
-        ['subzero',  'reptile',  'liukang', 'raiden',  'scorpion','raiden',  'kano',    'reptile' ], // Swap TO here (5,3)
+        ['raiden',   'subzero',  'scorpion','kano',    'kano',    'reptile', 'scorpion','kano'    ],
+        ['scorpion', 'kano',     'raiden',  'subzero', 'raiden',  'liukang', 'subzero', 'raiden'  ],
+        ['subzero',  'reptile',  'liukang', 'raiden',  'scorpion','raiden',  'kano',    'reptile' ],
         ['liukang',  'raiden',   'kano',    'subzero', 'reptile', 'subzero', 'scorpion','liukang' ],
         ['reptile',  'scorpion', 'subzero', 'raiden',  'liukang', 'kano',    'reptile', 'scorpion'],
     ],
-    step3: [
+    match3_before: [
+        ['scorpion', 'subzero',  'reptile', 'kano',    'liukang', 'scorpion','kano',    'raiden'  ],
+        ['reptile',  'scorpion', 'kano',    'raiden',  'liukang', 'subzero', 'reptile', 'scorpion'],
+        ['kano',     'liukang',  'reptile', 'raiden',  'subzero', 'raiden',  'liukang', 'subzero' ],
+        ['raiden',   'subzero',  'scorpion','kano',    'kano',    'kano',    'scorpion','kano'    ],
+        ['scorpion', 'kano',     'raiden',  'subzero', 'raiden',  'liukang', 'subzero', 'raiden'  ],
+        ['subzero',  'reptile',  'liukang', 'raiden',  'scorpion','raiden',  'kano',    'reptile' ],
+        ['liukang',  'raiden',   'kano',    'subzero', 'reptile', 'subzero', 'scorpion','liukang' ],
+        ['reptile',  'scorpion', 'subzero', 'raiden',  'liukang', 'kano',    'reptile', 'scorpion'],
+    ],
+    match3_after: [
+        ['scorpion', 'subzero',  'reptile', 'kano',    'liukang', 'scorpion','kano',    'raiden'  ],
+        ['reptile',  'scorpion', 'kano',    'raiden',  'liukang', 'subzero', 'reptile', 'scorpion'],
+        ['kano',     'liukang',  'reptile', 'raiden',  'subzero', 'raiden',  'liukang', 'subzero' ],
+        ['raiden',   'subzero',  'scorpion',{type: 'kano', state: 'matched'}, {type: 'kano', state: 'matched'}, {type: 'kano', state: 'matched'},'scorpion','kano'    ],
+        ['scorpion', 'kano',     'raiden',  'subzero', 'raiden',  'liukang', 'subzero', 'raiden'  ],
+        ['subzero',  'reptile',  'liukang', 'raiden',  'scorpion','raiden',  'kano',    'reptile' ],
+        ['liukang',  'raiden',   'kano',    'subzero', 'reptile', 'subzero', 'scorpion','liukang' ],
+        ['reptile',  'scorpion', 'subzero', 'raiden',  'liukang', 'kano',    'reptile', 'scorpion'],
+    ],
+    bonus_before: [
         ['scorpion', 'reptile',  'kano',    'liukang', 'scorpion','reptile', 'kano',    'liukang' ],
         ['raiden',   'kano',     'scorpion','reptile', 'raiden',  'kano',    'scorpion','reptile' ],
         ['liukang',  'raiden',   'reptile', 'subzero', 'raiden',  'liukang', 'raiden',  'reptile' ],
-        ['reptile',  'subzero',  'subzero', 'kano',    'subzero', 'scorpion','liukang', 'kano'    ], // Swap FROM (3,3) with (3,4)
+        ['reptile',  'subzero',  'subzero', 'subzero', 'kano',    'scorpion','liukang', 'kano'    ],
         ['kano',     'scorpion', 'liukang', 'raiden',  'reptile', 'kano',    'scorpion','liukang' ],
         ['scorpion', 'liukang',  'raiden',  'reptile', 'kano',    'scorpion','liukang', 'raiden'  ],
         ['raiden',   'reptile',  'kano',    'liukang', 'scorpion','raiden',  'reptile', 'kano'    ],
         ['liukang',  'kano',     'scorpion','reptile', 'raiden',  'liukang', 'kano',    'scorpion'],
     ],
-    step4: [
+     bonus_after: [
+        ['scorpion', 'reptile',  'kano',    'liukang', 'scorpion','reptile', 'kano',    'liukang' ],
+        ['raiden',   'kano',     'scorpion','reptile', 'raiden',  'kano',    'scorpion','reptile' ],
+        ['liukang',  'raiden',   'reptile', {type: 'subzero', state: 'matched'}, 'raiden', 'liukang', 'raiden',  'reptile' ],
+        ['reptile',  {type: 'subzero', state: 'matched'}, {type: 'subzero', state: 'matched'}, {type: 'subzero', state: 'matched'}, 'kano', 'scorpion','liukang', 'kano' ],
+        ['kano',     'scorpion', 'liukang', 'raiden',  'reptile', 'kano',    'scorpion','liukang' ],
+        ['scorpion', 'liukang',  'raiden',  'reptile', 'kano',    'scorpion','liukang', 'raiden'  ],
+        ['raiden',   'reptile',  'kano',    'liukang', 'scorpion','raiden',  'reptile', 'kano'    ],
+        ['liukang',  'kano',     'scorpion','reptile', 'raiden',  'liukang', 'kano',    'scorpion'],
+    ],
+    match4_before: [
         ['raiden',   'reptile',  'liukang', 'scorpion','raiden',  'reptile', 'subzero', 'scorpion'],
         ['scorpion', 'liukang',  'kano',    'raiden',  'scorpion','liukang', 'kano',    'raiden'  ],
         ['reptile',  'raiden',   'kano',    'subzero', 'liukang', 'reptile', 'raiden',  'liukang' ],
-        ['subzero',  'kano',     'kano',    'liukang', 'subzero', 'raiden',  'subzero', 'raiden'  ], // Swap FROM (3,2)
-        ['liukang',  'subzero',  'kano',    'kano',    'raiden',  'liukang', 'subzero', 'liukang' ], // Swap TO (4,2)
+        ['subzero',  'kano',     'kano',    'kano',    'kano',    'raiden',  'subzero', 'raiden'  ],
+        ['kano',     'subzero',  'liukang', 'reptile', 'raiden',  'liukang', 'subzero', 'liukang' ],
         ['raiden',   'liukang',  'subzero', 'raiden',  'reptile', 'raiden',  'liukang', 'raiden'  ],
         ['scorpion', 'raiden',   'liukang', 'scorpion','subzero', 'scorpion','raiden',  'liukang' ],
         ['reptile',  'scorpion', 'raiden',  'liukang', 'kano',    'reptile', 'scorpion','raiden'  ],
     ],
-    step5: [
-        ['liukang', 'raiden',   'reptile',  'kano',    'scorpion', 'liukang', 'raiden',  'reptile'],
-        ['subzero', 'kano',     'kano',     'subzero', 'liukang',  'subzero', 'scorpion','kano'   ],
-        ['raiden',  'liukang',  'subzero',  'scorpion','kano',     'raiden',  'liukang', 'reptile'],
-        ['scorpion','reptile',  {type: 'kano', special: 'col'}, 'subzero', 'reptile',  'scorpion','kano',    'raiden' ],
-        ['kano',    'raiden',   'liukang',  'subzero', 'raiden',   'kano',    'reptile', 'liukang'],
-        ['reptile', 'subzero',  'scorpion', 'kano',    'liukang',  'reptile', 'raiden',  'scorpion'],
-        ['subzero', 'liukang',  'kano',     'scorpion','raiden',   'subzero', 'liukang', 'kano'   ],
-        ['raiden',  'scorpion', 'reptile',  'liukang', 'kano',     'raiden',  'scorpion','reptile'],
+    match4_after: [
+        ['raiden',   'reptile',  'liukang', 'scorpion','raiden',  'reptile', 'subzero', 'scorpion'],
+        ['scorpion', 'liukang',  'kano',    'raiden',  'scorpion','liukang', 'kano',    'raiden'  ],
+        ['reptile',  'raiden',   {type: 'kano', special: 'row'}, 'subzero', 'liukang', 'reptile', 'raiden', 'liukang' ],
+        [null, null, null, null, 'kano',    'raiden',  'subzero', 'raiden'  ],
+        ['kano',     'subzero',  'liukang', 'reptile', 'raiden',  'liukang', 'subzero', 'liukang' ],
+        ['raiden',   'liukang',  'subzero', 'raiden',  'reptile', 'raiden',  'liukang', 'raiden'  ],
+        ['scorpion', 'raiden',   'liukang', 'scorpion','subzero', 'scorpion','raiden',  'liukang' ],
+        ['reptile',  'scorpion', 'raiden',  'liukang', 'kano',    'reptile', 'scorpion','raiden'  ],
     ],
-    step10: [
+    special_before: [
+        ['liukang',  'raiden',   'reptile', 'kano',    'scorpion','liukang', 'raiden', 'reptile'],
+        ['subzero',  'kano',     {type: 'kano', special: 'row'}, 'subzero', 'liukang', 'subzero', 'scorpion','kano'   ],
+        ['raiden',   'kano',     'subzero', 'scorpion','kano',    'raiden',  'liukang', 'reptile'],
+        ['scorpion', 'reptile',  'subzero', 'subzero', 'reptile', 'scorpion','kano',    'raiden' ],
+        ['kano',     'raiden',   'liukang', 'subzero', 'raiden',  'kano',    'reptile', 'liukang'],
+        ['reptile',  'subzero',  'scorpion','kano',    'liukang', 'reptile', 'raiden',  'scorpion'],
+        ['subzero',  'liukang',  'kano',    'scorpion','raiden',  'subzero', 'liukang', 'kano'   ],
+        ['raiden',   'scorpion', 'reptile', 'liukang', 'kano',    'raiden',  'scorpion','reptile'],
+    ],
+    special_after: [
+        ['liukang',  'raiden',   'reptile', 'kano',    'scorpion','liukang', 'raiden', 'reptile'],
+        [{type: 'subzero', state: 'matched'}, {type: 'kano', state: 'matched'}, {type: 'kano', state: 'matched', special: 'row'}, {type: 'subzero', state: 'matched'}, {type: 'liukang', state: 'matched'}, {type: 'subzero', state: 'matched'}, {type: 'scorpion', state: 'matched'}, {type: 'kano', state: 'matched'}],
+        ['raiden',   'kano',     'subzero', 'scorpion','kano',    'raiden',  'liukang', 'reptile'],
+        ['scorpion', 'reptile',  'subzero', 'subzero', 'reptile', 'scorpion','kano',    'raiden' ],
+        ['kano',     'raiden',   'liukang', 'subzero', 'raiden',  'kano',    'reptile', 'liukang'],
+        ['reptile',  'subzero',  'scorpion','kano',    'liukang', 'reptile', 'raiden',  'scorpion'],
+        ['subzero',  'liukang',  'kano',    'scorpion','raiden',  'subzero', 'liukang', 'kano'   ],
+        ['raiden',   'scorpion', 'reptile', 'liukang', 'kano',    'raiden',  'scorpion','reptile'],
+    ],
+    ability_after: [
         ['scorpion', 'reptile',  'kano',     'liukang', 'scorpion', 'reptile', 'kano',    'liukang' ],
         ['raiden',   'kano',     'scorpion', 'reptile', 'raiden',   'kano',    'scorpion','reptile' ],
         ['liukang',  'raiden',   'reptile',  'kano',    'liukang',  'raiden',  'reptile', 'kano'    ],
-        ['scorpion', 'kano',     'liukang',  'raiden',  'subzero',  'scorpion','kano',    'liukang' ],
-        ['reptile',  'raiden',   'scorpion', 'subzero', 'subzero',  'subzero', 'reptile', 'raiden'  ], // Target Area
-        ['kano',     'liukang',  'raiden',   'reptile', 'subzero',  'subzero', 'kano',    'liukang' ], // Target Area
+        ['scorpion', 'kano',     'liukang',  'raiden',  {type: 'subzero', state: 'matched'}, 'scorpion','kano', 'liukang' ],
+        ['reptile',  'raiden',   'scorpion', {type: 'subzero', state: 'matched'}, {type: 'subzero', state: 'matched'}, {type: 'subzero', state: 'matched'}, 'reptile', 'raiden' ],
+        ['kano',     'liukang',  'raiden',   {type: 'reptile', state: 'matched'}, {type: 'subzero', state: 'matched'}, {type: 'subzero', state: 'matched'}, 'kano', 'liukang' ],
         ['scorpion', 'reptile',  'kano',     'liukang', 'scorpion', 'reptile', 'kano',    'liukang' ],
         ['raiden',   'kano',     'scorpion', 'reptile', 'raiden',   'kano',    'scorpion','reptile' ],
     ]
@@ -1023,63 +1076,96 @@ const TUTORIAL_BOARDS: { [key: string]: TutorialPieceDef[][] } = {
 const TUTORIAL_SCRIPT: TutorialStep[] = [
     {
         text: "Welcome to Kombat Krush! This tutorial will teach you how to fight. Press 'Next' to continue.",
-        showNextButton: true,
+        boardKey: 'start',
     },
     {
-        text: "To attack, you must match 3 or more pieces of the same kind. Swap the highlighted pieces to make a match.",
-        boardKey: 'step1',
-        requiredAction: { type: 'swap', from: { row: 4, col: 3 }, to: { row: 5, col: 3 } },
+        text: "To attack, you must match 3 or more pieces of the same kind. Here is a board with a potential match.",
+        boardKey: 'match3_before',
     },
     {
-        text: "Excellent! Every match you make deals damage to your opponent. Notice their health bar has decreased.",
-        showNextButton: true,
+        text: "The matched pieces are removed, dealing damage to your opponent. Notice their health bar has decreased.",
+        boardKey: 'match3_after',
+        onStepStart: (dispatch, popupIdCounter) => {
+             dispatch({ type: 'DEAL_DAMAGE', payload: 10 });
+             dispatch({ type: 'ADD_TEXT_POPUP', payload: { popup: { id: 0, text: `10 DMG!`, row: 3, col: 4, className: 'damage-popup' }, counterRef: popupIdCounter }});
+             setTimeout(() => dispatch({ type: 'REMOVE_TEXT_POPUP' }), 1500);
+        }
     },
     {
-        text: "Matching your own character's pieces (Sub-Zero in this tutorial) deals bonus damage. Try it now!",
-        boardKey: 'step3',
-        requiredAction: { type: 'swap', from: { row: 3, col: 3 }, to: { row: 3, col: 4 } },
+        text: "Matching your own character's pieces (Sub-Zero in this tutorial) deals bonus damage.",
+        boardKey: 'bonus_before',
     },
     {
-        text: "Matching 4 pieces is even better! It creates a special piece that can clear an entire row or column. Make a 4-piece match now.",
-        boardKey: 'step4',
-        requiredAction: { type: 'swap', from: { row: 3, col: 2 }, to: { row: 4, col: 2 } },
+        text: "Excellent! Matching your own character pieces is the key to victory.",
+        boardKey: 'bonus_after',
+        onStepStart: (dispatch, popupIdCounter) => {
+             dispatch({ type: 'DEAL_DAMAGE', payload: 15 });
+             dispatch({ type: 'ADD_TEXT_POPUP', payload: { popup: { id: 0, text: `15 DMG!`, row: 3, col: 2, className: 'damage-popup' }, counterRef: popupIdCounter }});
+             setTimeout(() => dispatch({ type: 'REMOVE_TEXT_POPUP' }), 1500);
+        }
     },
     {
-        text: "That piece is now charged with power. Match the special piece to unleash a devastating column-clearing attack!",
-        boardKey: 'step5',
-        requiredAction: { type: 'swap', from: { row: 1, col: 1 }, to: { row: 1, col: 2 } },
+        text: "Matching 4 pieces is even better! It creates a special piece that can clear an entire row or column.",
+        boardKey: 'match4_before',
     },
     {
-        text: "Watch out! The opponent attacks after a number of moves. The 'ATTACK IN' counter is at 1. Make one more match to see what happens.",
-        boardKey: 'step1', // Reuse a board with a simple match
+        text: "The matched pieces are removed, and a new 'Row Clear' piece is left behind.",
+        boardKey: 'match4_after',
+         onStepStart: (dispatch) => {
+             dispatch({ type: 'DEAL_DAMAGE', payload: 12 });
+        }
+    },
+    {
+        text: "Now, if you match that special piece with others of the same kind, it will unleash a powerful effect.",
+        boardKey: 'special_before',
+    },
+    {
+        text: "BOOM! The special piece cleared the entire row, dealing massive damage.",
+        boardKey: 'special_after',
+        onStepStart: (dispatch, popupIdCounter) => {
+             dispatch({ type: 'DEAL_DAMAGE', payload: 30 });
+             dispatch({ type: 'ADD_TEXT_POPUP', payload: { popup: { id: 0, text: `30 DMG!`, row: 1, col: 3, className: 'damage-popup' }, counterRef: popupIdCounter }});
+             setTimeout(() => dispatch({ type: 'REMOVE_TEXT_POPUP' }), 1500);
+        }
+    },
+    {
+        text: "Watch out! The opponent attacks after a set number of your moves. The counter shows they will attack on your next move.",
+        boardKey: 'start',
         onStepStart: (dispatch) => {
              dispatch({ type: 'SET_MOVES_UNTIL_ATTACK', payload: 1 });
         },
-        requiredAction: { type: 'swap', from: { row: 4, col: 3 }, to: { row: 5, col: 3 } },
     },
-    {
+     {
         text: "Ouch! They attacked you. Keep an eye on the counter and defeat your opponent before they defeat you!",
-        showNextButton: true,
+        boardKey: 'start',
+        onStepStart: (dispatch) => {
+            dispatch({ type: 'SET_PLAYER_HEALTH', payload: PLAYER_MAX_HEALTH - 10 });
+            dispatch({ type: 'SET_PLAYER_IS_HIT', payload: true });
+        },
     },
     {
-        text: "Matching pieces also fills your Ability Meter at the bottom. When it's full, you can use a powerful character-specific move.",
-        showNextButton: true,
+        text: "Matching pieces also fills your Ability Meter. When it's full, you can use a powerful character-specific move.",
+        boardKey: 'start',
         onStepStart: (dispatch) => {
              dispatch({ type: 'UPDATE_ABILITY_METER', payload: ABILITY_METER_MAX });
         }
     },
     {
-        text: "Your Ability is ready! Click the glowing 'Ability' button to activate aiming mode.",
-        requiredAction: { type: 'ability' },
+        text: "Sub-Zero's ability lets you smash a 2x2 area of your choice, destroying all pieces within it.",
+        boardKey: 'start',
     },
     {
-        text: "Sub-Zero's ability lets you choose an area to smash. Click inside the highlighted 2x2 area to destroy it.",
-        boardKey: 'step10',
-        requiredAction: { type: 'ability_target', row: 4, col: 4 },
+        text: "KABOOM! Using your ability can clear many pieces at once and turn the tide of battle.",
+        boardKey: 'ability_after',
+        onStepStart: (dispatch, popupIdCounter) => {
+            dispatch({ type: 'DEAL_DAMAGE', payload: 25 });
+            dispatch({ type: 'ADD_TEXT_POPUP', payload: { popup: { id: 0, text: `25 DMG!`, row: 4, col: 4, className: 'damage-popup' }, counterRef: popupIdCounter }});
+             setTimeout(() => dispatch({ type: 'REMOVE_TEXT_POPUP' }), 1500);
+        }
     },
     {
         text: "FATALITY! You have mastered the basics of Kombat Krush. You are ready for a real challenge!",
-        showNextButton: true,
+        boardKey: 'ability_after',
     },
 ];
 
@@ -1159,7 +1245,10 @@ function gameReducer(state: AppState, action: AppAction): AppState {
             }
             
             const stepScript = TUTORIAL_SCRIPT[nextStep];
-            stepScript.onStepStart?.(action.payload);
+            // We need a ref for the popup counter, but we don't have one here.
+            // For the tutorial, we can pass a dummy ref as it's just for display.
+            const dummyPopupCounter = { current: state.textPopups.length + 1 };
+            stepScript.onStepStart?.(action.payload, dummyPopupCounter);
             
             let newBoard = state.board;
             if (stepScript.boardKey) {
@@ -1225,7 +1314,6 @@ function gameReducer(state: AppState, action: AppAction): AppState {
             const totalDamage = action.payload;
             const newOpponentHealth = Math.max(0, state.opponentHealth - totalDamage);
             
-            // In tutorial, don't end the game
             if (state.gameState === 'tutorial') {
                 return { ...state, opponentHealth: newOpponentHealth, opponentIsHit: true };
             }
@@ -1249,6 +1337,8 @@ function gameReducer(state: AppState, action: AppAction): AppState {
                 opponentBanter: newBanter
             };
         }
+        case 'SET_PLAYER_HEALTH':
+            return { ...state, playerHealth: action.payload };
          case 'PROCESS_OPPONENT_TURN': {
             if (!['playing', 'tutorial'].includes(state.gameState)) {
                 return { ...state, isProcessing: false };
@@ -1557,6 +1647,11 @@ const StartScreen = memo(({ onStart, onStartTutorial }: { onStart: () => void; o
                 <button onClick={onStart}>Start Game</button>
                 <button onClick={onStartTutorial} style={{backgroundColor: '#222', borderColor: '#555'}}>Tutorial</button>
             </div>
+            <footer>
+                <p className="legal-disclaimer">
+                    Disclaimer: This is a non-profit fan project. Mortal Kombat and all related characters and elements are trademarks of and © Warner Bros. Entertainment Inc. & NetherRealm Studios.
+                </p>
+            </footer>
         </div>
     </div>
 ));
@@ -1689,7 +1784,7 @@ const GameBoard = memo(({ board, specialEffects, textPopups, showToasty, selecte
                     effect.type === 'netherrealm_flame' ? 'effect-netherrealm-flame' :
                     effect.type === 'ice_shatter' ? 'effect-ice-shatter' :
                     effect.type === 'energy_ring' ? 'effect-energy-ring' :
-                    effect.type === 'fan_lift' ? 'effect-fan-lift' :
+                    effect.type === 'fan_lift' ? 'effect-fan_lift' :
                     effect.type === 'teleport_strike' ? 'effect-teleport-strike' : ''
                 }`} style={{ top: `${effect.row * 12.5}%`, left: `${effect.col * 12.5}%` }}>
                     {effect.type === 'ice_shatter' && Array.from({ length: 6 }).map((_, i) => <i key={i} />)}
@@ -1780,11 +1875,9 @@ const TutorialOverlay = memo(({ step, onNext, onExit }: { step: number; onNext: 
             <div className="tutorial-dialog">
                 <p>{currentStep.text}</p>
                 <div className="modal-button-group">
-                    {currentStep.showNextButton && (
-                         <button onClick={onNext}>
-                            {step === TUTORIAL_SCRIPT.length - 1 ? 'Finish' : 'Next'}
-                        </button>
-                    )}
+                    <button onClick={onNext}>
+                        {step === TUTORIAL_SCRIPT.length - 1 ? 'Finish' : 'Next'}
+                    </button>
                     <button onClick={onExit} className="tutorial-exit-button">Exit Tutorial</button>
                 </div>
             </div>
@@ -1895,13 +1988,12 @@ const App = () => {
     useEffect(() => {
         if (opponentIsHit) {
             playSoundMuted('opponentHit');
-            if (gameState === 'playing') dispatch({ type: 'OPPONENT_BANTER', payload: { event: 'hit' } });
             const timer = setTimeout(() => {
                 dispatch({ type: 'SET_OPPONENT_IS_HIT', payload: false });
             }, 400);
             return () => clearTimeout(timer);
         }
-    }, [opponentIsHit, playSoundMuted, gameState]);
+    }, [opponentIsHit, playSoundMuted]);
 
 
     useEffect(() => {
@@ -1963,24 +2055,10 @@ const App = () => {
     }, [currentLadderLevel, shuffledLadder, activePieceTypes]);
 
     const handlePieceClick = useCallback(async (row: number, col: number) => {
-        if (isProcessing || !['playing', 'tutorial'].includes(gameState)) return;
+        if (isProcessing || gameState !== 'playing') return;
 
         if (hintTimerId.current) clearTimeout(hintTimerId.current);
         dispatch({ type: 'CLEAR_HINTS' });
-        
-        if (gameState === 'tutorial') {
-            const currentStep = TUTORIAL_SCRIPT[tutorialStep];
-            if (!currentStep.requiredAction || (currentStep.requiredAction.type !== 'swap' && currentStep.requiredAction.type !== 'ability_target')) {
-                return;
-            }
-            if (currentStep.requiredAction.type === 'ability_target') {
-                 if (row >= currentStep.requiredAction.row && row <= currentStep.requiredAction.row + 1 && col >= currentStep.requiredAction.col && col <= currentStep.requiredAction.col +1) {
-                    processGameLoop({ state, dispatch, playSoundMuted, pieceIdCounter, popupIdCounter, initialAction: { type: 'ability', row: currentStep.requiredAction.row, col: currentStep.requiredAction.col }})
-                        .then(() => dispatch({ type: 'ADVANCE_TUTORIAL', payload: dispatch }));
-                 }
-                 return;
-            }
-        }
 
         if (abilityState === 'aiming') {
             await processGameLoop({ state, dispatch, playSoundMuted, pieceIdCounter, popupIdCounter, initialAction: { type: 'ability', row, col }});
@@ -1998,26 +2076,10 @@ const App = () => {
             const distance = Math.abs(row - selectedRow) + Math.abs(col - selectedCol);
 
             if (distance === 1) { 
-                if (gameState === 'tutorial') {
-                    const { requiredAction } = TUTORIAL_SCRIPT[tutorialStep];
-                     if (requiredAction?.type === 'swap') {
-                        const isCorrectSwap = (selectedRow === requiredAction.from.row && selectedCol === requiredAction.from.col && row === requiredAction.to.row && col === requiredAction.to.col) ||
-                                              (selectedRow === requiredAction.to.row && selectedCol === requiredAction.to.col && row === requiredAction.from.row && col === requiredAction.from.col);
-                        if (!isCorrectSwap) {
-                           dispatch({ type: 'SELECT_PIECE', payload: { row, col }}); // Select new piece
-                           return;
-                        }
-                    } else { return; }
-                }
-
                 dispatch({ type: 'SELECT_PIECE', payload: null });
                 playSoundMuted('swap');
                 
-                const promise = processGameLoop({ state, dispatch, playSoundMuted, pieceIdCounter, popupIdCounter, initialAction: { type: 'swap', from: selectedPiece, to: { row, col } }});
-                
-                if (gameState === 'tutorial') {
-                    promise.then(() => dispatch({ type: 'ADVANCE_TUTORIAL', payload: dispatch }));
-                }
+                await processGameLoop({ state, dispatch, playSoundMuted, pieceIdCounter, popupIdCounter, initialAction: { type: 'swap', from: selectedPiece, to: { row, col } }});
 
             } else {
                 dispatch({ type: 'SELECT_PIECE', payload: { row, col }});
@@ -2025,7 +2087,7 @@ const App = () => {
         } else {
             dispatch({ type: 'SELECT_PIECE', payload: { row, col }});
         }
-    }, [state, playSoundMuted, tutorialStep]);
+    }, [state, playSoundMuted]);
 
     const handleSwipe = useCallback((row: number, col: number, direction: 'up' | 'down' | 'left' | 'right') => {
         if (isProcessing || gameState !== 'playing' || selectedPiece || abilityState === 'aiming') return;
@@ -2061,21 +2123,7 @@ const App = () => {
     };
 
     const handleAbilityClick = useCallback(async () => {
-        if (isProcessing) return;
-        
-        if (gameState === 'tutorial') {
-            const currentStep = TUTORIAL_SCRIPT[tutorialStep];
-            if (currentStep.requiredAction?.type === 'ability') {
-                dispatch({ type: 'ADVANCE_TUTORIAL', payload: dispatch });
-                if (selectedCharacter === 'subzero' || selectedCharacter === 'scorpion') {
-                    dispatch({ type: 'SET_ABILITY_STATE', payload: 'aiming' });
-                    return;
-                }
-            } else {
-                return;
-            }
-        }
-
+        if (isProcessing || gameState !== 'playing') return;
 
         if (abilityState === 'aiming') {
             dispatch({ type: 'SET_ABILITY_STATE', payload: 'ready' });
@@ -2093,7 +2141,7 @@ const App = () => {
         playSoundMuted('ability', { ability: selectedCharacter });
         await processGameLoop({ state, dispatch, playSoundMuted, pieceIdCounter, popupIdCounter, initialAction: { type: 'ability' } });
         
-    }, [state, playSoundMuted, generatePlayerBanter, tutorialStep]);
+    }, [state, playSoundMuted, generatePlayerBanter]);
 
 
     const handleKeyDown = useCallback((e: KeyboardEvent) => {
