@@ -1,16 +1,15 @@
-
 import React, { useEffect, useCallback, useRef, useReducer, memo, CSSProperties, Dispatch, MutableRefObject } from 'react';
 import { createRoot } from 'react-dom/client';
 
 // --- BUNDLED FROM: src/types.ts ---
 
-type CharacterName = 'scorpion' | 'subzero' | 'raiden' | 'reptile' | 'kano' | 'liukang';
+type CharacterName = 'scorpion' | 'subzero' | 'raiden' | 'reptile' | 'kano' | 'liukang' | 'kitana' | 'mileena' | 'sonya';
 type PieceType = CharacterName | null;
 type SpecialType = 'none' | 'row' | 'col' | 'dragon';
 type GameState = 'start' | 'difficultySelect' | 'characterSelect' | 'playing' | 'gameOver' | 'levelWin' | 'ladderComplete' | 'tutorial';
 type AbilityState = 'idle' | 'ready' | 'aiming';
 type Difficulty = 'easy' | 'normal' | 'hard';
-type SpecialEffect = { id: number; type: SpecialType | 'lightning' | 'ice_shatter' | 'acid_spit' | 'kano_ball' | 'dragon_fire' | 'netherrealm_flame'; row: number; col: number; };
+type SpecialEffect = { id: number; type: SpecialType | 'lightning' | 'ice_shatter' | 'acid_spit' | 'kano_ball' | 'dragon_fire' | 'netherrealm_flame' | 'energy_ring' | 'fan_lift' | 'teleport_strike'; row: number; col: number; };
 
 interface Piece {
   id: number;
@@ -77,12 +76,13 @@ interface AppState {
     playerBanter: { key: number, text: string } | null;
     showSettingsModal: boolean;
     tutorialStep: number;
+    activePieceTypes: CharacterName[];
 }
 
 type AppAction =
     | { type: 'SET_GAME_STATE'; payload: GameState }
     | { type: 'SET_DIFFICULTY'; payload: Difficulty }
-    | { type: 'START_GAME'; payload: { character: CharacterName; ladder: Opponent[]; board: Piece[][] } }
+    | { type: 'START_GAME'; payload: { character: CharacterName; ladder: Opponent[]; board: Piece[][]; activePieceTypes: CharacterName[] } }
     | { type: 'START_TUTORIAL' }
     | { type: 'ADVANCE_TUTORIAL'; payload: Dispatch<AppAction> }
     | { type: 'NEXT_LEVEL'; payload: { board: Piece[][] } }
@@ -121,7 +121,7 @@ type AppAction =
 // --- BUNDLED FROM: src/constants.tsx ---
 
 const GRID_SIZE = 8;
-const PIECE_TYPES = ['scorpion', 'subzero', 'reptile', 'kano', 'raiden', 'liukang'];
+const ALL_PIECE_TYPES: CharacterName[] = ['scorpion', 'subzero', 'reptile', 'kano', 'raiden', 'liukang', 'kitana', 'mileena', 'sonya'];
 const ANIMATION_DELAY = 150; // ms for each step in the game loop
 const PLAYER_MAX_HEALTH = 100;
 const HINT_DELAY = 5000; // ms before showing a hint
@@ -130,11 +130,14 @@ const ABILITY_METER_MAX = 18; // Pieces to match to fill meter
 
 const LADDER_DATA: Opponent[] = [
     { name: 'Kano', health: 100, attack: 15, movesPerAttack: 5, pieceType: 'kano' },
-    { name: 'Reptile', health: 115, attack: 18, movesPerAttack: 5, pieceType: 'reptile' },
+    { name: 'Sonya', health: 110, attack: 17, movesPerAttack: 5, pieceType: 'sonya' },
+    { name: 'Reptile', health: 120, attack: 19, movesPerAttack: 5, pieceType: 'reptile' },
     { name: 'Liu Kang', health: 130, attack: 21, movesPerAttack: 4, pieceType: 'liukang' },
-    { name: 'Raiden', health: 145, attack: 24, movesPerAttack: 4, pieceType: 'raiden' },
+    { name: 'Kitana', health: 140, attack: 23, movesPerAttack: 4, pieceType: 'kitana' },
+    { name: 'Raiden', health: 150, attack: 25, movesPerAttack: 4, pieceType: 'raiden' },
     { name: 'Sub-Zero', health: 160, attack: 27, movesPerAttack: 4, pieceType: 'subzero' },
-    { name: 'Scorpion', health: 175, attack: 30, movesPerAttack: 3, pieceType: 'scorpion' },
+    { name: 'Mileena', health: 170, attack: 29, movesPerAttack: 3, pieceType: 'mileena' },
+    { name: 'Scorpion', health: 180, attack: 31, movesPerAttack: 3, pieceType: 'scorpion' },
 ];
 
 const getModifiedLadder = (difficulty: Difficulty): Opponent[] => {
@@ -212,6 +215,43 @@ const PieceIcons: { [key in CharacterName]: React.FC } = {
             </g>
         </svg>
     ),
+    kitana: () => (
+        <svg viewBox="0 0 100 100">
+            <defs>
+                {/* A single sharp blade for the fan */}
+                <path id="kitana-blade" d="M50 95 L42 30 C 46 20, 54 20, 58 30 Z" />
+            </defs>
+            <g fill="var(--kitana-color)" stroke="#1a1a1a" strokeWidth="3" strokeLinejoin="round" strokeLinecap="round">
+                {/* Render 5 blades, rotated to form an open fan */}
+                <use href="#kitana-blade" transform="rotate(-40 50 95)" />
+                <use href="#kitana-blade" transform="rotate(-20 50 95)" />
+                <use href="#kitana-blade" />
+                <use href="#kitana-blade" transform="rotate(20 50 95)" />
+                <use href="#kitana-blade" transform="rotate(40 50 95)" />
+            </g>
+            {/* A small circle to represent the pivot point of the fan */}
+            <circle cx="50" cy="95" r="6" fill="var(--kitana-color)" stroke="#1a1a1a" strokeWidth="3"/>
+        </svg>
+    ),
+    mileena: () => (
+        <svg viewBox="0 0 100 100">
+            <g stroke="var(--mileena-color)" strokeWidth="7" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                {/* Main Blade */}
+                <path d="M50 95 L50 15" />
+                {/* Side Prongs */}
+                <path d="M50 75 Q 30 75 35 50" />
+                <path d="M50 75 Q 70 75 65 50" />
+            </g>
+        </svg>
+    ),
+    sonya: () => (
+        <svg viewBox="0 0 100 100">
+            <g stroke="var(--sonya-color)" strokeWidth="8" fill="none">
+                <circle cx="50" cy="50" r="35" />
+                <circle cx="50" cy="50" r="20" />
+            </g>
+        </svg>
+    ),
 };
 
 const CHARACTER_DATA: {
@@ -246,6 +286,21 @@ const CHARACTER_DATA: {
         name: 'Liu Kang',
         description: 'Ability: Dragon Fire. Converts a random piece type to Liu Kang\'s piece.',
         ability: 'Dragon Fire'
+    },
+    kitana: {
+        name: 'Kitana',
+        description: 'Ability: Fan Lift. Scrambles all pieces in a 3x3 area.',
+        ability: 'Fan Lift'
+    },
+    mileena: {
+        name: 'Mileena',
+        description: 'Ability: Teleport Strike. Destroys 3 random pieces on the board.',
+        ability: 'Teleport Strike'
+    },
+    sonya: {
+        name: 'Sonya',
+        description: 'Ability: Energy Ring. Destroys pieces in a \'+\' shape.',
+        ability: 'Energy Ring'
     }
 };
 
@@ -297,6 +352,30 @@ const LOCAL_BANTER: { [key in CharacterName | 'opponent']: { [key: string]: stri
         hit: ["A poor strike.", "My focus is unbroken.", "You must try harder."],
         gameOverWin: ["The champion is victorious.", "Balance has been restored."],
         gameOverLoss: ["I have brought shame to the temple.", "I must train harder."]
+    },
+    kitana: {
+        gameStart: ["You will learn respect.", "For Edenia!", "A princess does not stand down.", "My fans will greet you."],
+        highCombo: ["A graceful victory.", "You are outmatched.", "Feel the winds of change.", "Elegance in battle."],
+        ability: ["Fan Lift!", "Dance with me!", "You are blown away."],
+        hit: ["You dare touch royalty?", "A temporary setback.", "I will not be so easily defeated."],
+        gameOverWin: ["Edenia is safe once more.", "Victory is mine."],
+        gameOverLoss: ["I have failed my people.", "This is not the end."]
+    },
+    mileena: {
+        gameStart: ["Let us dance!", "Come, let's play.", "I will enjoy this.", "A pretty face... let me fix that."],
+        highCombo: ["Was it good for you?", "So beautiful, so violent.", "Let's see what you're made of.", "More! More!"],
+        ability: ["Sai-onara!", "Let's get stabby!", "Peek-a-boo!"],
+        hit: ["I'll bite you for that!", "Just a scratch.", "That was a mistake."],
+        gameOverWin: ["Wasn't that fun?", "Father will be pleased."],
+        gameOverLoss: ["I am not a clone!", "I just wanted to play..."]
+    },
+    sonya: {
+        gameStart: ["Let's get this over with.", "For the Special Forces!", "I've got you in my sights.", "Time to go to work."],
+        highCombo: ["Target acquired.", "Mission objective: victory.", "Just like in training.", "Too easy."],
+        ability: ["Energy Ring!", "Nowhere to run!", "Gotcha!"],
+        hit: ["I can take it.", "That's all you've got?", "You'll pay for that."],
+        gameOverWin: ["Mission complete.", "Another one bites the dust."],
+        gameOverLoss: ["I need backup!", "Report to debriefing..."]
     },
     opponent: {
         taunt: ["Is that all you've got?", "Pathetic!", "My grandmother fights better than that.", "You're starting to bore me.", "You fight like a child."],
@@ -505,7 +584,7 @@ const hasPossibleMoves = (board: Piece[][]): boolean => {
 };
 
 
-const createInitialBoard = (idCounter: React.MutableRefObject<number>): Piece[][] => {
+const createInitialBoard = (idCounter: React.MutableRefObject<number>, activePieceTypes: CharacterName[]): Piece[][] => {
     let board: Piece[][] = [];
     do {
         board = [];
@@ -513,7 +592,7 @@ const createInitialBoard = (idCounter: React.MutableRefObject<number>): Piece[][
         for (let r = 0; r < GRID_SIZE; r++) {
             board[r] = [];
             for (let c = 0; c < GRID_SIZE; c++) {
-                const type = PIECE_TYPES[Math.floor(Math.random() * PIECE_TYPES.length)] as PieceType;
+                const type = activePieceTypes[Math.floor(Math.random() * activePieceTypes.length)] as PieceType;
                 board[r][c] = createPiece(r, c, type, idCounter);
             }
         }
@@ -539,12 +618,12 @@ const applyGravity = (board: Piece[][], idCounter: React.MutableRefObject<number
     return boardCopy;
 }
 
-const refillBoard = (board: Piece[][], idCounter: React.MutableRefObject<number>) => {
+const refillBoard = (board: Piece[][], idCounter: React.MutableRefObject<number>, activePieceTypes: CharacterName[]) => {
     const boardCopy = board.map(row => [...row]);
     for (let r = 0; r < GRID_SIZE; r++) {
         for (let c = 0; c < GRID_SIZE; c++) {
             if (boardCopy[r][c].type === null) {
-                const newType = PIECE_TYPES[Math.floor(Math.random() * PIECE_TYPES.length)] as PieceType;
+                const newType = activePieceTypes[Math.floor(Math.random() * activePieceTypes.length)] as PieceType;
                 boardCopy[r][c] = createPiece(r, c, newType, idCounter);
             }
         }
@@ -592,7 +671,7 @@ const handleMatchClearingAndSpecials = (
             if (piece.special === 'row') for (let c = 0; c < 8; c++) piecesToProcessForSpecials.add(boardCopy[piece.row][c]);
             if (piece.special === 'col') for (let r = 0; r < 8; r++) piecesToProcessForSpecials.add(boardCopy[r][piece.col]);
             if (piece.special === 'dragon') {
-                 const targetType = PIECE_TYPES[Math.floor(Math.random() * PIECE_TYPES.length)] as CharacterName;
+                 const targetType = ALL_PIECE_TYPES[Math.floor(Math.random() * ALL_PIECE_TYPES.length)] as CharacterName;
                  boardCopy.flat().forEach(p => { if (p.type === targetType) piecesToProcessForSpecials.add(p); });
             }
         }
@@ -695,6 +774,18 @@ const processGameLoop = async ({ state, dispatch, playSoundMuted, pieceIdCounter
                     const effectId = Date.now();
                     dispatch({ type: 'ADD_SPECIAL_EFFECT', payload: { effect: { id: effectId, type: 'kano_ball', row, col: 0 } } });
                     setTimeout(() => dispatch({ type: 'REMOVE_SPECIAL_EFFECT', payload: { id: effectId } }), 800);
+                } else if (selectedCharacter === 'mileena') {
+                    const allPieces = boardCopy.flat().filter(p => p.type);
+                    for (let i = 0; i < 3; i++) {
+                        if (allPieces.length > 0) {
+                            const randomIndex = Math.floor(Math.random() * allPieces.length);
+                            const piece = allPieces.splice(randomIndex, 1)[0];
+                            abilityPieces.push(piece);
+                            const effectId = Date.now() + i;
+                            dispatch({ type: 'ADD_SPECIAL_EFFECT', payload: { effect: { id: effectId, type: 'teleport_strike', row: piece.row, col: piece.col } } });
+                            setTimeout(() => dispatch({ type: 'REMOVE_SPECIAL_EFFECT', payload: { id: effectId } }), 500);
+                        }
+                    }
                 } else if (selectedCharacter === 'subzero' && initialAction.row !== undefined && initialAction.col !== undefined) {
                     const { row, col } = initialAction;
                     const startRow = Math.min(row, GRID_SIZE - 2);
@@ -703,6 +794,43 @@ const processGameLoop = async ({ state, dispatch, playSoundMuted, pieceIdCounter
                     const effectId = Date.now();
                     dispatch({ type: 'ADD_SPECIAL_EFFECT', payload: { effect: { id: effectId, type: 'ice_shatter', row: startRow + 0.5, col: startCol + 0.5 } } });
                     setTimeout(() => dispatch({ type: 'REMOVE_SPECIAL_EFFECT', payload: { id: effectId } }), 800);
+                } else if (selectedCharacter === 'sonya' && initialAction.row !== undefined && initialAction.col !== undefined) {
+                    const { row, col } = initialAction;
+                    abilityPieces.push(boardCopy[row][col]);
+                    if (row > 0) abilityPieces.push(boardCopy[row - 1][col]);
+                    if (row < GRID_SIZE - 1) abilityPieces.push(boardCopy[row + 1][col]);
+                    if (col > 0) abilityPieces.push(boardCopy[row][col - 1]);
+                    if (col < GRID_SIZE - 1) abilityPieces.push(boardCopy[row][col + 1]);
+                    const effectId = Date.now();
+                    dispatch({ type: 'ADD_SPECIAL_EFFECT', payload: { effect: { id: effectId, type: 'energy_ring', row: row, col: col } } });
+                    setTimeout(() => dispatch({ type: 'REMOVE_SPECIAL_EFFECT', payload: { id: effectId } }), 600);
+                } else if (selectedCharacter === 'kitana' && initialAction.row !== undefined && initialAction.col !== undefined) {
+                    const { row, col } = initialAction;
+                    const startRow = Math.max(0, row - 1);
+                    const endRow = Math.min(GRID_SIZE - 1, row + 1);
+                    const startCol = Math.max(0, col - 1);
+                    const endCol = Math.min(GRID_SIZE - 1, col + 1);
+
+                    let piecesToScramble: Piece[] = [];
+                    for (let r = startRow; r <= endRow; r++) {
+                        for (let c = startCol; c <= endCol; c++) {
+                            piecesToScramble.push(boardCopy[r][c]);
+                        }
+                    }
+                    const typesToScramble = piecesToScramble.map(p => p.type).sort(() => 0.5 - Math.random());
+                    
+                    let index = 0;
+                    for (let r = startRow; r <= endRow; r++) {
+                        for (let c = startCol; c <= endCol; c++) {
+                            boardCopy[r][c] = { ...boardCopy[r][c], type: typesToScramble[index++] };
+                        }
+                    }
+                    const effectId = Date.now();
+                    dispatch({ type: 'ADD_SPECIAL_EFFECT', payload: { effect: { id: effectId, type: 'fan_lift', row: startRow + 1, col: startCol + 1 } } });
+                    setTimeout(() => dispatch({ type: 'REMOVE_SPECIAL_EFFECT', payload: { id: effectId } }), 800);
+                    
+                    await sleep(ANIMATION_DELAY * 2);
+                    matches = findMatches(boardCopy);
                 } else if (selectedCharacter === 'scorpion' && initialAction.row !== undefined && initialAction.col !== undefined) {
                     const targetType = boardCopy[initialAction.row][initialAction.col].type;
                     if(targetType) {
@@ -771,7 +899,7 @@ const processGameLoop = async ({ state, dispatch, playSoundMuted, pieceIdCounter
             }));
             
             let gravityBoard = applyGravity(boardWithoutMatched, pieceIdCounter);
-            boardCopy = refillBoard(gravityBoard, pieceIdCounter);
+            boardCopy = refillBoard(gravityBoard, pieceIdCounter, state.activePieceTypes);
 
             dispatch({ type: 'SET_BOARD', payload: boardCopy });
             await sleep(ANIMATION_DELAY * 2);
@@ -789,7 +917,7 @@ const processGameLoop = async ({ state, dispatch, playSoundMuted, pieceIdCounter
 
     if (!hasPossibleMoves(finalBoard) && state.gameState === 'playing') {
         await sleep(500);
-        dispatch({ type: 'SET_BOARD', payload: createInitialBoard(pieceIdCounter) });
+        dispatch({ type: 'SET_BOARD', payload: createInitialBoard(pieceIdCounter, state.activePieceTypes) });
     }
 
     if (initialAction.type === 'swap' && !anyMatchesOccurred) {
@@ -861,24 +989,24 @@ const TUTORIAL_BOARDS: { [key: string]: TutorialPieceDef[][] } = {
         ['liukang',  'kano',     'scorpion','reptile', 'raiden',  'liukang', 'kano',    'scorpion'],
     ],
     step4: [
-        ['raiden',   'reptile',  'kano',    'scorpion','raiden',  'reptile', 'subzero', 'scorpion'],
+        ['raiden',   'reptile',  'liukang', 'scorpion','raiden',  'reptile', 'subzero', 'scorpion'],
         ['scorpion', 'liukang',  'kano',    'raiden',  'scorpion','liukang', 'kano',    'raiden'  ],
-        ['reptile',  'raiden',   'kano',    'kano',    'liukang', 'reptile', 'raiden',  'liukang' ],
-        ['subzero',  'kano',     'reptile', 'kano',    'subzero', 'raiden',  'subzero', 'raiden'  ], // Swap FROM (3,2)
-        ['liukang',  'subzero',  'kano',    'liukang', 'raiden',  'liukang', 'subzero', 'liukang' ], // Swap TO (4,2)
+        ['reptile',  'raiden',   'kano',    'subzero', 'liukang', 'reptile', 'raiden',  'liukang' ],
+        ['subzero',  'kano',     'kano',    'liukang', 'subzero', 'raiden',  'subzero', 'raiden'  ], // Swap FROM (3,2)
+        ['liukang',  'subzero',  'kano',    'kano',    'raiden',  'liukang', 'subzero', 'liukang' ], // Swap TO (4,2)
         ['raiden',   'liukang',  'subzero', 'raiden',  'reptile', 'raiden',  'liukang', 'raiden'  ],
         ['scorpion', 'raiden',   'liukang', 'scorpion','subzero', 'scorpion','raiden',  'liukang' ],
         ['reptile',  'scorpion', 'raiden',  'liukang', 'kano',    'reptile', 'scorpion','raiden'  ],
     ],
     step5: [
-        ['liukang',  'raiden',   'reptile',  'kano',     'scorpion', 'liukang', 'raiden',  'reptile' ],
-        ['subzero',  'kano',     'reptile',  'subzero',  'liukang',  'subzero', 'scorpion','kano'    ],
-        ['raiden',   'liukang',  'kano',     'scorpion', 'kano',     'raiden',  'liukang', 'reptile' ],
-        ['scorpion', 'kano',     {type: 'kano', special: 'col'}, 'subzero',  'reptile',  'scorpion','kano',    'raiden'  ],
-        ['kano',     'reptile',  'liukang',  'subzero',  'raiden',   'kano',    'reptile', 'liukang' ],
-        ['reptile',  'raiden',   'scorpion', 'kano',     'liukang',  'reptile', 'raiden',  'scorpion'],
-        ['subzero',  'liukang',  'kano',     'scorpion', 'raiden',   'subzero', 'liukang', 'kano'    ],
-        ['raiden',   'scorpion', 'reptile',  'liukang', 'kano',     'raiden',  'scorpion','reptile' ],
+        ['liukang', 'raiden',   'reptile',  'kano',    'scorpion', 'liukang', 'raiden',  'reptile'],
+        ['subzero', 'kano',     'kano',     'subzero', 'liukang',  'subzero', 'scorpion','kano'   ],
+        ['raiden',  'liukang',  'subzero',  'scorpion','kano',     'raiden',  'liukang', 'reptile'],
+        ['scorpion','reptile',  {type: 'kano', special: 'col'}, 'subzero', 'reptile',  'scorpion','kano',    'raiden' ],
+        ['kano',    'raiden',   'liukang',  'subzero', 'raiden',   'kano',    'reptile', 'liukang'],
+        ['reptile', 'subzero',  'scorpion', 'kano',    'liukang',  'reptile', 'raiden',  'scorpion'],
+        ['subzero', 'liukang',  'kano',     'scorpion','raiden',   'subzero', 'liukang', 'kano'   ],
+        ['raiden',  'scorpion', 'reptile',  'liukang', 'kano',     'raiden',  'scorpion','reptile'],
     ],
     step10: [
         ['scorpion', 'reptile',  'kano',     'liukang', 'scorpion', 'reptile', 'kano',    'liukang' ],
@@ -992,6 +1120,7 @@ const initialState: AppState = {
     playerBanter: null,
     showSettingsModal: false,
     tutorialStep: 0,
+    activePieceTypes: [],
 };
 
 function gameReducer(state: AppState, action: AppAction): AppState {
@@ -1006,7 +1135,8 @@ function gameReducer(state: AppState, action: AppAction): AppState {
             const idCounter = { current: 0 };
             const tutorialOpponent: Opponent = { name: 'Kano', health: 100, attack: 10, movesPerAttack: 8, pieceType: 'kano' };
             const firstStep = TUTORIAL_SCRIPT[0];
-            const board = firstStep.boardKey ? createTutorialBoard(TUTORIAL_BOARDS[firstStep.boardKey], idCounter) : createInitialBoard(idCounter);
+            const activeTutorialPieces: CharacterName[] = ['scorpion', 'subzero', 'raiden', 'reptile', 'kano', 'liukang'];
+            const board = firstStep.boardKey ? createTutorialBoard(TUTORIAL_BOARDS[firstStep.boardKey], idCounter) : createInitialBoard(idCounter, activeTutorialPieces);
             
             return {
                 ...initialState,
@@ -1017,6 +1147,7 @@ function gameReducer(state: AppState, action: AppAction): AppState {
                 opponentHealth: tutorialOpponent.health,
                 movesUntilAttack: tutorialOpponent.movesPerAttack,
                 board: board,
+                activePieceTypes: activeTutorialPieces,
                 playerBanter: { key: Date.now(), text: "Let's see what you've got." },
                 opponentBanter: { key: Date.now() + 1, text: "I'll break you." }
             };
@@ -1044,7 +1175,7 @@ function gameReducer(state: AppState, action: AppAction): AppState {
             };
         }
         case 'START_GAME': {
-            const { character, ladder, board } = action.payload;
+            const { character, ladder, board, activePieceTypes } = action.payload;
             const firstOpponent = ladder[0];
             const playerBanterOptions = LOCAL_BANTER[character]?.gameStart || [];
             const opponentIdleBanterOptions = LOCAL_BANTER.opponent?.idle || [];
@@ -1060,6 +1191,7 @@ function gameReducer(state: AppState, action: AppAction): AppState {
                 opponentHealth: firstOpponent.health,
                 movesUntilAttack: firstOpponent.movesPerAttack,
                 board,
+                activePieceTypes,
                 playerBanter: { key: Date.now(), text: playerBanterOptions[Math.floor(Math.random() * playerBanterOptions.length)] || '' },
                 opponentBanter: { key: Date.now() + 1, text: opponentIdleBanterOptions[Math.floor(Math.random() * opponentIdleBanterOptions.length)] || '' },
             };
@@ -1363,28 +1495,35 @@ const SettingsModal = memo(({ isOpen, onClose, onMainMenu }: { isOpen: boolean; 
     );
 });
 
-const CharacterSelectScreen = memo(({ onStartGame }: { onStartGame: (character: CharacterName) => void }) => (
-    <div className="screen-overlay">
-        <div className="modal-dialog character-select">
-            <h2>Choose Your Fighter</h2>
-            <p className="scroll-hint">Scroll down to see all fighters</p>
-            <div className="fighters-container">
-                {(Object.keys(CHARACTER_DATA) as CharacterName[]).map(charKey => {
-                    const char = CHARACTER_DATA[charKey];
-                    return (
-                       <button key={char.name} className={`fighter-card ${charKey}`} onClick={() => onStartGame(charKey)}>
-                            <div className={`char-portrait ${charKey}`}></div>
-                            <div className="fighter-details">
-                                <h3>{char.name}</h3>
-                                <p>{char.description}</p>
-                            </div>
-                       </button>
-                    )
-                })}
+const CharacterSelectScreen = memo(({ onStartGame }: { onStartGame: (character: CharacterName) => void }) => {
+    const shuffledCharacters = React.useMemo(() =>
+        (Object.keys(CHARACTER_DATA) as CharacterName[]).sort(() => 0.5 - Math.random()),
+        []
+    );
+
+    return (
+        <div className="screen-overlay">
+            <div className="modal-dialog character-select">
+                <h2>Choose Your Fighter</h2>
+                <p className="scroll-hint">Scroll down to see all fighters</p>
+                <div className="fighters-container">
+                    {shuffledCharacters.map(charKey => {
+                        const char = CHARACTER_DATA[charKey];
+                        return (
+                           <button key={char.name} className={`fighter-card ${charKey}`} onClick={() => onStartGame(charKey)}>
+                                <div className={`char-portrait ${charKey}`}></div>
+                                <div className="fighter-details">
+                                    <h3>{char.name}</h3>
+                                    <p>{char.description}</p>
+                                </div>
+                           </button>
+                        )
+                    })}
+                </div>
             </div>
         </div>
-    </div>
-));
+    );
+});
 
 const DifficultySelectScreen = memo(({ onSelectDifficulty }: { onSelectDifficulty: (difficulty: Difficulty) => void }) => (
     <div className="screen-overlay">
@@ -1548,7 +1687,10 @@ const GameBoard = memo(({ board, specialEffects, textPopups, showToasty, selecte
                     effect.type === 'kano_ball' ? 'effect-kano_ball' :
                     effect.type === 'dragon_fire' ? 'effect-dragon-fire' :
                     effect.type === 'netherrealm_flame' ? 'effect-netherrealm-flame' :
-                    effect.type === 'ice_shatter' ? 'effect-ice-shatter' : ''
+                    effect.type === 'ice_shatter' ? 'effect-ice-shatter' :
+                    effect.type === 'energy_ring' ? 'effect-energy-ring' :
+                    effect.type === 'fan_lift' ? 'effect-fan-lift' :
+                    effect.type === 'teleport_strike' ? 'effect-teleport-strike' : ''
                 }`} style={{ top: `${effect.row * 12.5}%`, left: `${effect.col * 12.5}%` }}>
                     {effect.type === 'ice_shatter' && Array.from({ length: 6 }).map((_, i) => <i key={i} />)}
                 </div>
@@ -1588,7 +1730,7 @@ const GameBoard = memo(({ board, specialEffects, textPopups, showToasty, selecte
     </div>
 ));
 
-const MobileHeader = memo(({ selectedCharacter, playerBanter, playerIsHit, opponent, opponentBanter, opponentIsHit }: { selectedCharacter: CharacterName | null, playerBanter: {key: number, text: string} | null, playerIsHit: boolean, opponent: Opponent | null, opponentBanter: {key: number, text: string} | null, opponentIsHit: boolean }) => (
+const MobileHeader = memo(({ selectedCharacter, playerBanter, playerIsHit, opponent, opponentBanter, opponentIsHit, movesUntilAttack }: { selectedCharacter: CharacterName | null, playerBanter: {key: number, text: string} | null, playerIsHit: boolean, opponent: Opponent | null, opponentBanter: {key: number, text: string} | null, opponentIsHit: boolean, movesUntilAttack: number }) => (
     <div className="mobile-header">
         <div className="mobile-profile-item">
             <div key={playerBanter?.key || 'player-banter-static'} className="player-banter-bubble" aria-live="polite">
@@ -1597,35 +1739,35 @@ const MobileHeader = memo(({ selectedCharacter, playerBanter, playerIsHit, oppon
             <div className={`player-portrait ${selectedCharacter || ''} ${playerIsHit ? 'taking-damage' : ''}`} data-tutorial-id="mobile-player-profile"></div>
         </div>
         {opponent && (
-            <div className="mobile-profile-item">
-                <div key={opponentBanter?.key || 'opponent-banter-static'} className="opponent-banter-bubble" aria-live="polite">
-                    {opponentBanter ? `"${opponentBanter.text}"` : ''}
+            <div className="mobile-opponent-group">
+                <div className="opponent-attack-timer" data-tutorial-id="mobile-opponent-timer">
+                    <div className="attack-timer-label">ATTACK IN</div>
+                    <div className="attack-timer-value">{movesUntilAttack}</div>
                 </div>
-                <div className={`opponent-portrait ${opponent.pieceType || ''} ${opponentIsHit ? 'taking-damage' : ''}`}></div>
+                <div className="mobile-profile-item">
+                    <div key={opponentBanter?.key || 'opponent-banter-static'} className="opponent-banter-bubble" aria-live="polite">
+                        {opponentBanter ? `"${opponentBanter.text}"` : ''}
+                    </div>
+                    <div className={`opponent-portrait ${opponent.pieceType || ''} ${opponentIsHit ? 'taking-damage' : ''}`}></div>
+                </div>
             </div>
         )}
     </div>
 ));
 
-const MobileFooter = memo(({ opponent, movesUntilAttack, shuffledLadder, currentLadderLevel }: { opponent: Opponent | null, movesUntilAttack: number, shuffledLadder: Opponent[], currentLadderLevel: number }) => (
+const MobileFooter = memo(({ opponent, shuffledLadder, currentLadderLevel }: { opponent: Opponent | null, shuffledLadder: Opponent[], currentLadderLevel: number }) => (
     <div className="mobile-footer">
         {opponent && (
-            <>
-                <div className="opponent-attack-timer" data-tutorial-id="mobile-opponent-timer">
-                    <div className="attack-timer-label">ATTACK IN</div>
-                    <div className="attack-timer-value">{movesUntilAttack}</div>
-                </div>
-                <div className="ladder-container">
-                    {shuffledLadder.map((opp, index) => (
-                        <div
-                            key={opp.pieceType}
-                            className={`ladder-portrait ${opp.pieceType} ${
-                                index < currentLadderLevel ? 'defeated' : ''
-                            } ${index === currentLadderLevel ? 'current' : ''}`}
-                        />
-                    ))}
-                </div>
-            </>
+            <div className="ladder-container">
+                {shuffledLadder.map((opp, index) => (
+                    <div
+                        key={opp.pieceType}
+                        className={`ladder-portrait ${opp.pieceType} ${
+                            index < currentLadderLevel ? 'defeated' : ''
+                        } ${index === currentLadderLevel ? 'current' : ''}`}
+                    />
+                ))}
+            </div>
         )}
     </div>
 ));
@@ -1661,7 +1803,7 @@ const App = () => {
         combo, textPopups, autoHintIds, manualHintIds, isHintOnCooldown, hintCooldown, comboKey,
         isMuted, showToasty, specialEffects, keyboardCursor, selectedCharacter, abilityMeter,
         abilityState, playerBanter, maxCombo,
-        score, showSettingsModal, difficulty, tutorialStep
+        score, showSettingsModal, difficulty, tutorialStep, activePieceTypes
     } = state;
 
     const pieceIdCounter = useRef(0);
@@ -1718,7 +1860,7 @@ const App = () => {
     
     useEffect(() => {
         document.body.className = document.body.className.replace(/\bgamestate-[a-zA-Z]+\b/g, '');
-        document.body.className = document.body.className.replace(/\btheme-[a-zA-Z]+\b/g, '');
+        document.body.className = document.body.className.replace(/\btheme-[a-zA-Z-]+\b/g, '');
         document.body.classList.add(`gamestate-${gameState}`);
 
         if (selectedCharacter) {
@@ -1789,9 +1931,14 @@ const App = () => {
     const startGame = useCallback((character: CharacterName) => {
         if (!difficulty) return;
         const modifiedLadder = getModifiedLadder(difficulty);
-        const opponents = modifiedLadder.filter(opp => opp.pieceType !== character);
-        const newBoard = createInitialBoard(pieceIdCounter);
-        dispatch({ type: 'START_GAME', payload: { character, ladder: opponents.slice(0, 5), board: newBoard } });
+        const opponentPool = modifiedLadder.filter(opp => opp.pieceType !== character);
+        const shuffledPool = opponentPool.sort(() => 0.5 - Math.random());
+        const selectedOpponents = shuffledPool.slice(0, 5);
+        
+        const currentActivePieceTypes = [character, ...selectedOpponents.map(o => o.pieceType)];
+
+        const newBoard = createInitialBoard(pieceIdCounter, currentActivePieceTypes);
+        dispatch({ type: 'START_GAME', payload: { character, ladder: selectedOpponents, board: newBoard, activePieceTypes: currentActivePieceTypes } });
     }, [difficulty]);
     
     const handleGoToCharacterSelect = () => {
@@ -1808,12 +1955,12 @@ const App = () => {
 
     const handleNextLevel = useCallback(() => {
         if (currentLadderLevel + 1 < shuffledLadder.length) {
-            const newBoard = createInitialBoard(pieceIdCounter);
+            const newBoard = createInitialBoard(pieceIdCounter, activePieceTypes);
             dispatch({ type: 'NEXT_LEVEL', payload: { board: newBoard } });
         } else {
             dispatch({ type: 'SET_GAME_STATE', payload: 'ladderComplete' });
         }
-    }, [currentLadderLevel, shuffledLadder]);
+    }, [currentLadderLevel, shuffledLadder, activePieceTypes]);
 
     const handlePieceClick = useCallback(async (row: number, col: number) => {
         if (isProcessing || !['playing', 'tutorial'].includes(gameState)) return;
@@ -1920,7 +2067,6 @@ const App = () => {
             const currentStep = TUTORIAL_SCRIPT[tutorialStep];
             if (currentStep.requiredAction?.type === 'ability') {
                 dispatch({ type: 'ADVANCE_TUTORIAL', payload: dispatch });
-                // For subzero, we enter aiming state. The reducer handles onStepStart.
                 if (selectedCharacter === 'subzero' || selectedCharacter === 'scorpion') {
                     dispatch({ type: 'SET_ABILITY_STATE', payload: 'aiming' });
                     return;
@@ -1938,7 +2084,7 @@ const App = () => {
     
         if (abilityState !== 'ready' || !selectedCharacter) return;
         
-        if (selectedCharacter === 'subzero' || selectedCharacter === 'scorpion') {
+        if (['subzero', 'scorpion', 'sonya', 'kitana'].includes(selectedCharacter)) {
             dispatch({ type: 'SET_ABILITY_STATE', payload: 'aiming' });
             return;
         }
@@ -2058,6 +2204,7 @@ const App = () => {
                         opponent={opponent}
                         opponentBanter={opponentBanter}
                         opponentIsHit={opponentIsHit}
+                        movesUntilAttack={movesUntilAttack}
                     />
                     <GameHeader
                         playerHealth={playerHealth}
@@ -2110,7 +2257,6 @@ const App = () => {
                 
                 <MobileFooter 
                     opponent={opponent}
-                    movesUntilAttack={movesUntilAttack}
                     shuffledLadder={shuffledLadder}
                     currentLadderLevel={currentLadderLevel}
                 />

@@ -34,6 +34,9 @@
         --kano-color: #d03028;
         --raiden-color: #d0d0d8;
         --liukang-color: #f87838;
+        --kitana-color: #3878f8;
+        --mileena-color: #e040fb;
+        --sonya-color: #8A2BE2;
         --fatality-color: #e53935;
       }
       * {
@@ -345,6 +348,9 @@
       .fighter-card.reptile:hover { box-shadow: 0 0 15px var(--reptile-color); border-color: var(--reptile-color); color: #fff;}
       .fighter-card.kano:hover { box-shadow: 0 0 15px var(--kano-color); border-color: var(--kano-color); color: #fff;}
       .fighter-card.liukang:hover { box-shadow: 0 0 15px var(--liukang-color); border-color: var(--liukang-color); color: #fff;}
+      .fighter-card.kitana:hover { box-shadow: 0 0 15px var(--kitana-color); border-color: var(--kitana-color); color: #fff;}
+      .fighter-card.mileena:hover { box-shadow: 0 0 15px var(--mileena-color); border-color: var(--mileena-color); color: #fff;}
+      .fighter-card.sonya:hover { box-shadow: 0 0 15px var(--sonya-color); border-color: var(--sonya-color); color: #fff;}
       
       .fighter-card .char-portrait.scorpion { background-image: url('https://i.pinimg.com/736x/08/62/b8/0862b8e266e1673bc5cc39806345c63c.jpg'); background-position: center 20%; }
       .fighter-card .char-portrait.subzero { background-image: url('https://i.pinimg.com/736x/98/27/ee/9827ee697604aa5aac32398fae9c1afd.jpg'); background-position: center 30%; }
@@ -352,6 +358,9 @@
       .fighter-card .char-portrait.reptile { background-image: url('https://i.pinimg.com/736x/4d/6b/fa/4d6bfaf8c9344f69c171d32cf007ec44.jpg'); }
       .fighter-card .char-portrait.kano { background-image: url('https://i.pinimg.com/1200x/52/c9/f9/52c9f9606b42168b4c41c1d34321aef2.jpg'); }
       .fighter-card .char-portrait.liukang { background-image: url('https://i.pinimg.com/736x/3c/e9/a5/3ce9a59269ccf217971c85a787d44ef6.jpg'); background-position: top center; }
+      .fighter-card .char-portrait.kitana { background-image: url('https://i.pinimg.com/originals/87/ca/74/87ca7416e3fd4e1c51e3d3c754826ef2.jpg'); background-position: center 10%; }
+      .fighter-card .char-portrait.mileena { background-image: url('https://i.pinimg.com/736x/42/98/6d/42986dec9e26af9e1ebf018712af5713.jpg'); background-position: center 20%; }
+      .fighter-card .char-portrait.sonya { background-image: url('https://wiki.supercombo.gg/images/5/5e/Mk11-sonya-splash.png'); background-position: center 15%; }
 
       /* --- DIFFICULTY SELECT --- */
       .difficulty-buttons {
@@ -423,6 +432,9 @@
       .theme-reptile .game-container { box-shadow: 0 0 20px var(--reptile-color); }
       .theme-kano .game-container { box-shadow: 0 0 20px var(--kano-color); }
       .theme-liukang .game-container { box-shadow: 0 0 20px var(--liukang-color); }
+      .theme-kitana .game-container { box-shadow: 0 0 20px var(--kitana-color); }
+      .theme-mileena .game-container { box-shadow: 0 0 20px var(--mileena-color); }
+      .theme-sonya .game-container { box-shadow: 0 0 20px var(--sonya-color); }
       
       .player-info-col, .opponent-info-col {
         display: flex;
@@ -541,6 +553,9 @@
       .ability-container.reptile .ability-meter-inner { background: var(--reptile-color); }
       .ability-container.kano .ability-meter-inner { background: var(--kano-color); }
       .ability-container.liukang .ability-meter-inner { background: var(--liukang-color); }
+      .ability-container.kitana .ability-meter-inner { background: var(--kitana-color); }
+      .ability-container.mileena .ability-meter-inner { background: var(--mileena-color); }
+      .ability-container.sonya .ability-meter-inner { background: var(--sonya-color); }
       
       .ability-tooltip {
         position: absolute;
@@ -602,12 +617,19 @@
       .theme-reptile .player-portrait { border-color: var(--reptile-color); box-shadow: 0 0 15px var(--reptile-color); background-image: url('https://i.pinimg.com/736x/4d/6b/fa/4d6bfaf8c9344f69c171d32cf007ec44.jpg'); }
       .theme-kano .player-portrait { border-color: var(--kano-color); box-shadow: 0 0 15px var(--kano-color); background-image: url('https://i.pinimg.com/1200x/52/c9/f9/52c9f9606b42168b4c41c1d34321aef2.jpg'); }
       .theme-liukang .player-portrait { border-color: var(--liukang-color); box-shadow: 0 0 15px var(--liukang-color); background-image: url('https://i.pinimg.com/736x/3c/e9/a5/3ce9a59269ccf217971c85a787d44ef6.jpg'); background-position: top center; }
+      .theme-kitana .player-portrait { border-color: var(--kitana-color); box-shadow: 0 0 15px var(--kitana-color); background-image: url('https://i.pinimg.com/originals/87/ca/74/87ca7416e3fd4e1c51e3d3c754826ef2.jpg'); background-position: center 10%; }
+      .theme-mileena .player-portrait { border-color: var(--mileena-color); box-shadow: 0 0 15px var(--mileena-color); background-image: url('https://i.pinimg.com/736x/42/98/6d/42986dec9e26af9e1ebf018712af5713.jpg'); background-position: center 20%; }
+      .theme-sonya .player-portrait { border-color: var(--sonya-color); box-shadow: 0 0 15px var(--sonya-color); background-image: url('https://wiki.supercombo.gg/images/5/5e/Mk11-sonya-splash.png'); background-position: center 15%; }
+      
       .opponent-portrait.reptile { background-image: url('https://i.pinimg.com/736x/4d/6b/fa/4d6bfaf8c9344f69c171d32cf007ec44.jpg'); border-color: var(--reptile-color); box-shadow: 0 0 15px var(--reptile-color); }
       .opponent-portrait.kano { background-image: url('https://i.pinimg.com/1200x/52/c9/f9/52c9f9606b42168b4c41c1d34321aef2.jpg'); border-color: var(--kano-color); box-shadow: 0 0 15px var(--kano-color); }
       .opponent-portrait.liukang { background-image: url('https://i.pinimg.com/736x/3c/e9/a5/3ce9a59269ccf217971c85a787d44ef6.jpg'); border-color: var(--liukang-color); box-shadow: 0 0 15px var(--liukang-color); background-position: top center;}
       .opponent-portrait.scorpion { background-image: url('https://i.pinimg.com/736x/08/62/b8/0862b8e266e1673bc5cc39806345c63c.jpg'); border-color: var(--scorpion-color); box-shadow: 0 0 15px var(--scorpion-color); background-position: center 20%;}
       .opponent-portrait.subzero { background-image: url('https://i.pinimg.com/736x/98/27/ee/9827ee697604aa5aac32398fae9c1afd.jpg'); border-color: var(--subzero-color); box-shadow: 0 0 15px var(--subzero-color); background-position: center 30%;}
       .opponent-portrait.raiden { background-image: url('https://i.pinimg.com/736x/00/98/9c/00989cbd8c7947663aca0ef8425ce690.jpg'); border-color: var(--raiden-color); box-shadow: 0 0 15px var(--raiden-color); background-position: top center;}
+      .opponent-portrait.kitana { background-image: url('https://i.pinimg.com/originals/87/ca/74/87ca7416e3fd4e1c51e3d3c754826ef2.jpg'); border-color: var(--kitana-color); box-shadow: 0 0 15px var(--kitana-color); background-position: center 10%; }
+      .opponent-portrait.mileena { background-image: url('https://i.pinimg.com/736x/42/98/6d/42986dec9e26af9e1ebf018712af5713.jpg'); border-color: var(--mileena-color); box-shadow: 0 0 15px var(--mileena-color); background-position: center 20%; }
+      .opponent-portrait.sonya { background-image: url('https://wiki.supercombo.gg/images/5/5e/Mk11-sonya-splash.png'); border-color: var(--sonya-color); box-shadow: 0 0 15px var(--sonya-color); background-position: center 15%; }
 
       .player-banter-bubble, .opponent-banter-bubble { background: #1a1a1a; border: 2px solid #444; border-radius: 10px; padding: 10px; position: relative; animation: banter-fade-in 0.5s; min-height: 5em; width: 100%; transition: border-color 0.5s ease, background-color 0.5s ease; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 1.1rem; line-height: 1.3; text-shadow: 1px 1px 3px rgba(0,0,0,0.7); }
       @keyframes banter-fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -618,6 +640,9 @@
       .theme-reptile .player-banter-bubble { border-color: var(--reptile-color); }
       .theme-kano .player-banter-bubble { border-color: var(--kano-color); }
       .theme-liukang .player-banter-bubble { border-color: var(--liukang-color); }
+      .theme-kitana .player-banter-bubble { border-color: var(--kitana-color); }
+      .theme-mileena .player-banter-bubble { border-color: var(--mileena-color); }
+      .theme-sonya .player-banter-bubble { border-color: var(--sonya-color); }
       .opponent-banter-bubble { border-color: var(--fatality-color); }
 
       .opponent-attack-timer { background-color: rgba(0,0,0,0.7); border: 2px solid var(--fatality-color); border-radius: 50%; width: clamp(80px, 10vw, 100px); height: clamp(80px, 10vw, 100px); display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 10px; box-shadow: 0 0 10px var(--fatality-color); }
@@ -635,6 +660,9 @@
       .ladder-portrait.scorpion { background-image: url('https://i.pinimg.com/736x/08/62/b8/0862b8e266e1673bc5cc39806345c63c.jpg'); background-position: center 20%; }
       .ladder-portrait.subzero { background-image: url('https://i.pinimg.com/736x/98/27/ee/9827ee697604aa5aac32398fae9c1afd.jpg'); background-position: center 30%; }
       .ladder-portrait.raiden { background-image: url('https://i.pinimg.com/736x/00/98/9c/00989cbd8c7947663aca0ef8425ce690.jpg'); background-position: top center; }
+      .ladder-portrait.kitana { background-image: url('https://i.pinimg.com/originals/87/ca/74/87ca7416e3fd4e1c51e3d3c754826ef2.jpg'); background-position: center 10%; }
+      .ladder-portrait.mileena { background-image: url('https://i.pinimg.com/736x/42/98/6d/42986dec9e26af9e1ebf018712af5713.jpg'); background-position: center 20%; }
+      .ladder-portrait.sonya { background-image: url('https://wiki.supercombo.gg/images/5/5e/Mk11-sonya-splash.png'); background-position: center 15%; }
 
       /* --- GAME BOARD & PIECES --- */
       .game-board-container { position: relative; width: var(--board-size); height: var(--board-size); background-color: #000; border-radius: 5px; overflow: hidden; margin-top: auto; }
@@ -657,6 +685,9 @@
       .theme-reptile .game-board { border-color: var(--reptile-color); }
       .theme-kano .game-board { border-color: var(--kano-color); }
       .theme-liukang .game-board { border-color: var(--liukang-color); }
+      .theme-kitana .game-board { border-color: var(--kitana-color); }
+      .theme-mileena .game-board { border-color: var(--mileena-color); }
+      .theme-sonya .game-board { border-color: var(--sonya-color); }
       
       .game-piece {
         position: absolute;
@@ -693,6 +724,9 @@
       .game-piece.kano { --glow-color: var(--kano-color); }
       .game-piece.raiden { --glow-color: var(--raiden-color); }
       .game-piece.liukang { --glow-color: var(--liukang-color); }
+      .game-piece.kitana { --glow-color: var(--kitana-color); }
+      .game-piece.mileena { --glow-color: var(--mileena-color); }
+      .game-piece.sonya { --glow-color: var(--sonya-color); }
       
       .game-piece.matched svg { animation: matched-piece-animation 0.4s ease-out forwards; }
       @keyframes matched-piece-animation {
@@ -784,6 +818,13 @@
         0% { transform: scale(0); opacity: 1; }
         100% { transform: scale(1.5); opacity: 0; }
       }
+      .effect-energy-ring { width: 12.5%; height: 12.5%; border: 8px solid var(--sonya-color); border-radius: 50%; box-shadow: 0 0 10px #fff, inset 0 0 10px #fff; animation: effect-energy-ring-anim 0.6s ease-out forwards; }
+      @keyframes effect-energy-ring-anim { 0% { transform: scale(0); opacity: 1; } 100% { transform: scale(3); opacity: 0; } }
+      .effect-fan-lift { width: 37.5%; height: 37.5%; background: radial-gradient(circle, transparent 30%, var(--kitana-color) 100%); border-radius: 50%; animation: effect-fan-lift-anim 0.8s ease-out forwards; }
+      @keyframes effect-fan-lift-anim { 0% { transform: rotate(0) scale(0.5); opacity: 0.8; } 100% { transform: rotate(360deg) scale(1); opacity: 0; } }
+      .effect-teleport_strike { width: 12.5%; height: 12.5%; background: var(--mileena-color); border-radius: 50%; box-shadow: 0 0 15px #fff, 0 0 25px var(--mileena-color); animation: effect-teleport-strike-anim 0.5s ease-out forwards; }
+      @keyframes effect-teleport-strike-anim { 0% { transform: scale(0); opacity: 1; } 50% { transform: scale(1.5); } 100% { transform: scale(0); opacity: 0; } }
+
 
       /* --- TUTORIAL STYLES --- */
       .tutorial-overlay-blocker {
@@ -923,18 +964,37 @@
           margin-top: 4em; /* Add space for banter bubbles above */
         }
         .mobile-footer {
-          justify-content: space-around;
-          gap: 20px;
+          justify-content: center;
+          gap: 0;
         }
         .mobile-profile-item {
           display: flex;
           align-items: center;
           gap: 10px;
         }
+        .mobile-opponent-group {
+          display: flex;
+          align-items: center;
+          gap: 5px;
+        }
         .mobile-header .player-portrait,
         .mobile-header .opponent-portrait {
           width: 60px; height: 60px;
         }
+        .mobile-header .opponent-attack-timer {
+          width: 60px;
+          height: 60px;
+          padding: 5px;
+          flex-shrink: 0;
+        }
+        .mobile-header .attack-timer-label {
+          font-size: 0.6rem;
+          white-space: nowrap;
+        }
+        .mobile-header .attack-timer-value {
+          font-size: 1.6rem;
+        }
+
         .mobile-header .player-banter-bubble,
         .mobile-header .opponent-banter-bubble {
           position: absolute;
@@ -949,11 +1009,6 @@
         .mobile-header .player-banter-bubble { left: 5px; }
         .mobile-header .opponent-banter-bubble { right: 5px; }
 
-        .mobile-footer .opponent-attack-timer {
-          width: 70px; height: 70px;
-        }
-        .mobile-footer .attack-timer-label { font-size: 0.7rem; }
-        .mobile-footer .attack-timer-value { font-size: 1.8rem; }
         .mobile-footer .ladder-container {
           flex-direction: row;
           justify-content: center;
@@ -985,7 +1040,7 @@
         }
         .controls-and-meters {
           gap: 10px;
-          justify-content: center;
+          justify-content: space-between;
         }
         .ability-container {
           order: 1;
