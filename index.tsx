@@ -6,8 +6,9 @@ import { createRoot } from 'react-dom/client';
 type CharacterName = 'scorpion' | 'subzero' | 'raiden' | 'reptile' | 'kano' | 'liukang';
 type PieceType = CharacterName | null;
 type SpecialType = 'none' | 'row' | 'col' | 'dragon';
-type GameState = 'start' | 'characterSelect' | 'playing' | 'gameOver' | 'levelWin' | 'ladderComplete';
+type GameState = 'start' | 'difficultySelect' | 'characterSelect' | 'playing' | 'gameOver' | 'levelWin' | 'ladderComplete';
 type AbilityState = 'idle' | 'ready' | 'aiming';
+type Difficulty = 'easy' | 'normal' | 'hard';
 type SpecialEffect = { id: number; type: SpecialType | 'lightning' | 'ice_shatter' | 'acid_spit' | 'kano_ball' | 'dragon_fire' | 'netherrealm_flame'; row: number; col: number; };
 
 interface Piece {
@@ -43,6 +44,7 @@ interface Opponent {
 interface AppState {
     board: Piece[][];
     gameState: GameState;
+    difficulty: Difficulty | null;
     playerHealth: number;
     opponentHealth: number;
     currentLadderLevel: number;
@@ -77,6 +79,7 @@ interface AppState {
 
 type AppAction =
     | { type: 'SET_GAME_STATE'; payload: GameState }
+    | { type: 'SET_DIFFICULTY'; payload: Difficulty }
     | { type: 'START_GAME'; payload: { character: CharacterName; ladder: Opponent[]; board: Piece[][] } }
     | { type: 'NEXT_LEVEL'; payload: { board: Piece[][] } }
     | { type: 'RESET_STATE' }
@@ -128,6 +131,28 @@ const LADDER_DATA: Opponent[] = [
     { name: 'Sub-Zero', health: 160, attack: 27, movesPerAttack: 4, pieceType: 'subzero' },
     { name: 'Scorpion', health: 175, attack: 30, movesPerAttack: 3, pieceType: 'scorpion' },
 ];
+
+const getModifiedLadder = (difficulty: Difficulty): Opponent[] => {
+    switch (difficulty) {
+        case 'easy':
+            return LADDER_DATA.map(opp => ({
+                ...opp,
+                health: Math.round(opp.health * 0.8),
+                attack: Math.round(opp.attack * 0.8),
+                movesPerAttack: opp.movesPerAttack + 1,
+            }));
+        case 'hard':
+            return LADDER_DATA.map(opp => ({
+                ...opp,
+                health: Math.round(opp.health * 1.2),
+                attack: Math.round(opp.attack * 1.2),
+                movesPerAttack: Math.max(2, opp.movesPerAttack - 1),
+            }));
+        case 'normal':
+        default:
+            return [...LADDER_DATA];
+    }
+};
 
 
 // --- SVG Icons for Pieces ---
@@ -779,6 +804,7 @@ const processGameLoop = async ({ state, dispatch, playSoundMuted, pieceIdCounter
 const initialState: AppState = {
     board: [],
     gameState: 'start',
+    difficulty: null,
     playerHealth: PLAYER_MAX_HEALTH,
     opponentHealth: 100,
     currentLadderLevel: 0,
@@ -815,6 +841,8 @@ function gameReducer(state: AppState, action: AppAction): AppState {
     switch (action.type) {
         case 'SET_GAME_STATE':
             return { ...state, gameState: action.payload, showSettingsModal: false };
+        case 'SET_DIFFICULTY':
+            return { ...state, difficulty: action.payload, gameState: 'characterSelect' };
         case 'RESET_STATE':
             return initialState;
         case 'START_GAME': {
@@ -825,6 +853,7 @@ function gameReducer(state: AppState, action: AppAction): AppState {
             
             return {
                 ...initialState,
+                difficulty: state.difficulty,
                 gameState: 'playing',
                 selectedCharacter: character,
                 shuffledLadder: ladder,
@@ -1146,6 +1175,28 @@ const CharacterSelectScreen = memo(({ onStartGame }: { onStartGame: (character: 
     </div>
 ));
 
+const DifficultySelectScreen = memo(({ onSelectDifficulty }: { onSelectDifficulty: (difficulty: Difficulty) => void }) => (
+    <div className="screen-overlay">
+        <div className="modal-dialog">
+            <h2>Choose Your Destiny</h2>
+            <div className="difficulty-buttons">
+                <button onClick={() => onSelectDifficulty('easy')}>
+                    <h3>Easy</h3>
+                    <p>A gentler challenge. Opponents are weaker and attack less often.</p>
+                </button>
+                <button onClick={() => onSelectDifficulty('normal')}>
+                    <h3>Normal</h3>
+                    <p>The intended Kombat Krush experience.</p>
+                </button>
+                <button onClick={() => onSelectDifficulty('hard')}>
+                    <h3>Hard</h3>
+                    <p>For seasoned warriors. Opponents are stronger and more aggressive.</p>
+                </button>
+            </div>
+        </div>
+    </div>
+));
+
 const StartScreen = memo(({ onStart }: { onStart: () => void; }) => (
     <div className="screen-overlay">
         <div className="modal-dialog">
@@ -1263,7 +1314,7 @@ const GameHeader = memo(({
                     }
                 </button>
                 <button className="settings-button" onClick={onSettingsClick} aria-label="Settings">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49.42l.38-2.65c.61-.25 1.17-.59 1.69.98l2.49 1c.23.09.49 0-.61.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49.42l.38-2.65c.61-.25 1.17-.59-1.69.98l2.49 1c.23.09.49 0-.61.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/></svg>
                 </button>
             </div>
         </div>
@@ -1375,7 +1426,7 @@ const App = () => {
         combo, textPopups, autoHintIds, manualHintIds, isHintOnCooldown, hintCooldown, comboKey,
         isMuted, showToasty, specialEffects, keyboardCursor, selectedCharacter, abilityMeter,
         abilityState, playerBanter, maxCombo,
-        score, showSettingsModal
+        score, showSettingsModal, difficulty
     } = state;
 
     const pieceIdCounter = useRef(0);
@@ -1490,10 +1541,12 @@ const App = () => {
     }, [hintCooldown, isHintOnCooldown]);
     
     const startGame = useCallback((character: CharacterName) => {
-        const opponents = LADDER_DATA.filter(opp => opp.pieceType !== character);
+        if (!difficulty) return;
+        const modifiedLadder = getModifiedLadder(difficulty);
+        const opponents = modifiedLadder.filter(opp => opp.pieceType !== character);
         const newBoard = createInitialBoard(pieceIdCounter);
         dispatch({ type: 'START_GAME', payload: { character, ladder: opponents.slice(0, 5), board: newBoard } });
-    }, []);
+    }, [difficulty]);
     
     const handleGoToCharacterSelect = () => {
         dispatch({ type: 'SET_GAME_STATE', payload: 'characterSelect' });
@@ -1650,8 +1703,14 @@ const App = () => {
 
     if (gameState === 'start') {
         return <StartScreen 
-            onStart={() => dispatch({ type: 'SET_GAME_STATE', payload: 'characterSelect' })} 
+            onStart={() => dispatch({ type: 'SET_GAME_STATE', payload: 'difficultySelect' })} 
         />;
+    }
+    
+    if (gameState === 'difficultySelect') {
+        return <DifficultySelectScreen 
+            onSelectDifficulty={(difficulty) => dispatch({ type: 'SET_DIFFICULTY', payload: difficulty })}
+        />
     }
 
     if (gameState === 'characterSelect') {
