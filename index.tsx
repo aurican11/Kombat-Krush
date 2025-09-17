@@ -1,3 +1,4 @@
+
 import React, { useEffect, useCallback, useRef, useReducer, memo, CSSProperties, Dispatch, MutableRefObject } from 'react';
 import { createRoot } from 'react-dom/client';
 
@@ -6,7 +7,7 @@ import { createRoot } from 'react-dom/client';
 type CharacterName = 'scorpion' | 'subzero' | 'raiden' | 'reptile' | 'kano' | 'liukang';
 type PieceType = CharacterName | null;
 type SpecialType = 'none' | 'row' | 'col' | 'dragon';
-type GameState = 'start' | 'difficultySelect' | 'characterSelect' | 'playing' | 'gameOver' | 'levelWin' | 'ladderComplete';
+type GameState = 'start' | 'difficultySelect' | 'characterSelect' | 'playing' | 'gameOver' | 'levelWin' | 'ladderComplete' | 'tutorial';
 type AbilityState = 'idle' | 'ready' | 'aiming';
 type Difficulty = 'easy' | 'normal' | 'hard';
 type SpecialEffect = { id: number; type: SpecialType | 'lightning' | 'ice_shatter' | 'acid_spit' | 'kano_ball' | 'dragon_fire' | 'netherrealm_flame'; row: number; col: number; };
@@ -75,12 +76,15 @@ interface AppState {
     aimTarget: { row: number; col: number } | null;
     playerBanter: { key: number, text: string } | null;
     showSettingsModal: boolean;
+    tutorialStep: number;
 }
 
 type AppAction =
     | { type: 'SET_GAME_STATE'; payload: GameState }
     | { type: 'SET_DIFFICULTY'; payload: Difficulty }
     | { type: 'START_GAME'; payload: { character: CharacterName; ladder: Opponent[]; board: Piece[][] } }
+    | { type: 'START_TUTORIAL' }
+    | { type: 'ADVANCE_TUTORIAL'; payload: Dispatch<AppAction> }
     | { type: 'NEXT_LEVEL'; payload: { board: Piece[][] } }
     | { type: 'RESET_STATE' }
     | { type: 'SELECT_PIECE'; payload: { row: number; col: number } | null }
@@ -111,7 +115,8 @@ type AppAction =
     | { type: 'SET_KEYBOARD_CURSOR'; payload: { row: number; col: number } }
     | { type: 'SET_ABILITY_STATE'; payload: AbilityState }
     | { type: 'UPDATE_ABILITY_METER'; payload: number }
-    | { type: 'RESET_ABILITY_METER' };
+    | { type: 'RESET_ABILITY_METER' }
+    | { type: 'SET_MOVES_UNTIL_ATTACK'; payload: number };
 
 // --- BUNDLED FROM: src/constants.tsx ---
 
@@ -792,12 +797,163 @@ const processGameLoop = async ({ state, dispatch, playSoundMuted, pieceIdCounter
         dispatch({ type: 'SET_BOARD', payload: state.board }); // Revert to original board state
     }
 
-    if (anyMatchesOccurred) {
+    if (anyMatchesOccurred && ['playing', 'tutorial'].includes(state.gameState)) {
         dispatch({ type: 'PROCESS_OPPONENT_TURN' });
     } else {
         dispatch({ type: 'SET_PROCESSING', payload: false });
     }
 };
+
+// --- BUNDLED FROM: src/tutorial.ts ---
+
+interface TutorialStep {
+    text: string;
+    requiredAction?: {
+        type: 'swap';
+        from: { row: number; col: number };
+        to: { row: number; col: number };
+    } | {
+        type: 'ability';
+    } | {
+        type: 'ability_target';
+        row: number;
+        col: number;
+    };
+    showNextButton?: boolean;
+    onStepStart?: (dispatch: Dispatch<AppAction>) => void;
+    boardKey?: keyof typeof TUTORIAL_BOARDS;
+}
+
+type TutorialPieceDef = CharacterName | null | { type: CharacterName; special: SpecialType };
+
+const createTutorialBoard = (layout: TutorialPieceDef[][], idCounter: React.MutableRefObject<number>): Piece[][] => {
+    idCounter.current = 0;
+    return layout.map((row, r) =>
+        row.map((def, c) => {
+            if (def && typeof def === 'object' && 'type' in def) {
+                return createPiece(r, c, def.type, idCounter, def.special);
+            }
+            return createPiece(r, c, def as CharacterName | null, idCounter);
+        })
+    );
+};
+
+// prettier-ignore
+const TUTORIAL_BOARDS: { [key: string]: TutorialPieceDef[][] } = {
+    step1: [
+        ['scorpion', 'subzero',  'reptile', 'kano',    'liukang', 'scorpion','kano',    'raiden'  ],
+        ['reptile',  'scorpion', 'kano',    'raiden',  'liukang', 'subzero', 'reptile', 'scorpion'],
+        ['kano',     'liukang',  'reptile', 'raiden',  'subzero', 'raiden',  'liukang', 'subzero' ],
+        ['raiden',   'subzero',  'scorpion','raiden',  'kano',    'reptile', 'scorpion','kano'    ],
+        ['scorpion', 'kano',     'raiden',  'subzero', 'raiden',  'liukang', 'subzero', 'raiden'  ], // Swap FROM here (4,3)
+        ['subzero',  'reptile',  'liukang', 'raiden',  'scorpion','raiden',  'kano',    'reptile' ], // Swap TO here (5,3)
+        ['liukang',  'raiden',   'kano',    'subzero', 'reptile', 'subzero', 'scorpion','liukang' ],
+        ['reptile',  'scorpion', 'subzero', 'raiden',  'liukang', 'kano',    'reptile', 'scorpion'],
+    ],
+    step3: [
+        ['scorpion', 'reptile',  'kano',    'liukang', 'scorpion','reptile', 'kano',    'liukang' ],
+        ['raiden',   'kano',     'scorpion','reptile', 'raiden',  'kano',    'scorpion','reptile' ],
+        ['liukang',  'raiden',   'reptile', 'subzero', 'raiden',  'liukang', 'raiden',  'reptile' ],
+        ['reptile',  'subzero',  'subzero', 'kano',    'subzero', 'scorpion','liukang', 'kano'    ], // Swap FROM (3,3) with (3,4)
+        ['kano',     'scorpion', 'liukang', 'raiden',  'reptile', 'kano',    'scorpion','liukang' ],
+        ['scorpion', 'liukang',  'raiden',  'reptile', 'kano',    'scorpion','liukang', 'raiden'  ],
+        ['raiden',   'reptile',  'kano',    'liukang', 'scorpion','raiden',  'reptile', 'kano'    ],
+        ['liukang',  'kano',     'scorpion','reptile', 'raiden',  'liukang', 'kano',    'scorpion'],
+    ],
+    step4: [
+        ['raiden',   'reptile',  'kano',    'scorpion','raiden',  'reptile', 'subzero', 'scorpion'],
+        ['scorpion', 'liukang',  'kano',    'raiden',  'scorpion','liukang', 'kano',    'raiden'  ],
+        ['reptile',  'raiden',   'kano',    'kano',    'liukang', 'reptile', 'raiden',  'liukang' ],
+        ['subzero',  'kano',     'reptile', 'kano',    'subzero', 'raiden',  'subzero', 'raiden'  ], // Swap FROM (3,2)
+        ['liukang',  'subzero',  'kano',    'liukang', 'raiden',  'liukang', 'subzero', 'liukang' ], // Swap TO (4,2)
+        ['raiden',   'liukang',  'subzero', 'raiden',  'reptile', 'raiden',  'liukang', 'raiden'  ],
+        ['scorpion', 'raiden',   'liukang', 'scorpion','subzero', 'scorpion','raiden',  'liukang' ],
+        ['reptile',  'scorpion', 'raiden',  'liukang', 'kano',    'reptile', 'scorpion','raiden'  ],
+    ],
+    step5: [
+        ['liukang',  'raiden',   'reptile',  'kano',     'scorpion', 'liukang', 'raiden',  'reptile' ],
+        ['subzero',  'kano',     'reptile',  'subzero',  'liukang',  'subzero', 'scorpion','kano'    ],
+        ['raiden',   'liukang',  'kano',     'scorpion', 'kano',     'raiden',  'liukang', 'reptile' ],
+        ['scorpion', 'kano',     {type: 'kano', special: 'col'}, 'subzero',  'reptile',  'scorpion','kano',    'raiden'  ],
+        ['kano',     'reptile',  'liukang',  'subzero',  'raiden',   'kano',    'reptile', 'liukang' ],
+        ['reptile',  'raiden',   'scorpion', 'kano',     'liukang',  'reptile', 'raiden',  'scorpion'],
+        ['subzero',  'liukang',  'kano',     'scorpion', 'raiden',   'subzero', 'liukang', 'kano'    ],
+        ['raiden',   'scorpion', 'reptile',  'liukang', 'kano',     'raiden',  'scorpion','reptile' ],
+    ],
+    step10: [
+        ['scorpion', 'reptile',  'kano',     'liukang', 'scorpion', 'reptile', 'kano',    'liukang' ],
+        ['raiden',   'kano',     'scorpion', 'reptile', 'raiden',   'kano',    'scorpion','reptile' ],
+        ['liukang',  'raiden',   'reptile',  'kano',    'liukang',  'raiden',  'reptile', 'kano'    ],
+        ['scorpion', 'kano',     'liukang',  'raiden',  'subzero',  'scorpion','kano',    'liukang' ],
+        ['reptile',  'raiden',   'scorpion', 'subzero', 'subzero',  'subzero', 'reptile', 'raiden'  ], // Target Area
+        ['kano',     'liukang',  'raiden',   'reptile', 'subzero',  'subzero', 'kano',    'liukang' ], // Target Area
+        ['scorpion', 'reptile',  'kano',     'liukang', 'scorpion', 'reptile', 'kano',    'liukang' ],
+        ['raiden',   'kano',     'scorpion', 'reptile', 'raiden',   'kano',    'scorpion','reptile' ],
+    ]
+};
+
+const TUTORIAL_SCRIPT: TutorialStep[] = [
+    {
+        text: "Welcome to Kombat Krush! This tutorial will teach you how to fight. Press 'Next' to continue.",
+        showNextButton: true,
+    },
+    {
+        text: "To attack, you must match 3 or more pieces of the same kind. Swap the highlighted pieces to make a match.",
+        boardKey: 'step1',
+        requiredAction: { type: 'swap', from: { row: 4, col: 3 }, to: { row: 5, col: 3 } },
+    },
+    {
+        text: "Excellent! Every match you make deals damage to your opponent. Notice their health bar has decreased.",
+        showNextButton: true,
+    },
+    {
+        text: "Matching your own character's pieces (Sub-Zero in this tutorial) deals bonus damage. Try it now!",
+        boardKey: 'step3',
+        requiredAction: { type: 'swap', from: { row: 3, col: 3 }, to: { row: 3, col: 4 } },
+    },
+    {
+        text: "Matching 4 pieces is even better! It creates a special piece that can clear an entire row or column. Make a 4-piece match now.",
+        boardKey: 'step4',
+        requiredAction: { type: 'swap', from: { row: 3, col: 2 }, to: { row: 4, col: 2 } },
+    },
+    {
+        text: "That piece is now charged with power. Match the special piece to unleash a devastating column-clearing attack!",
+        boardKey: 'step5',
+        requiredAction: { type: 'swap', from: { row: 1, col: 1 }, to: { row: 1, col: 2 } },
+    },
+    {
+        text: "Watch out! The opponent attacks after a number of moves. The 'ATTACK IN' counter is at 1. Make one more match to see what happens.",
+        boardKey: 'step1', // Reuse a board with a simple match
+        onStepStart: (dispatch) => {
+             dispatch({ type: 'SET_MOVES_UNTIL_ATTACK', payload: 1 });
+        },
+        requiredAction: { type: 'swap', from: { row: 4, col: 3 }, to: { row: 5, col: 3 } },
+    },
+    {
+        text: "Ouch! They attacked you. Keep an eye on the counter and defeat your opponent before they defeat you!",
+        showNextButton: true,
+    },
+    {
+        text: "Matching pieces also fills your Ability Meter at the bottom. When it's full, you can use a powerful character-specific move.",
+        showNextButton: true,
+        onStepStart: (dispatch) => {
+             dispatch({ type: 'UPDATE_ABILITY_METER', payload: ABILITY_METER_MAX });
+        }
+    },
+    {
+        text: "Your Ability is ready! Click the glowing 'Ability' button to activate aiming mode.",
+        requiredAction: { type: 'ability' },
+    },
+    {
+        text: "Sub-Zero's ability lets you choose an area to smash. Click inside the highlighted 2x2 area to destroy it.",
+        boardKey: 'step10',
+        requiredAction: { type: 'ability_target', row: 4, col: 4 },
+    },
+    {
+        text: "FATALITY! You have mastered the basics of Kombat Krush. You are ready for a real challenge!",
+        showNextButton: true,
+    },
+];
 
 // --- BUNDLED FROM: src/reducer.ts ---
 
@@ -835,6 +991,7 @@ const initialState: AppState = {
     aimTarget: null,
     playerBanter: null,
     showSettingsModal: false,
+    tutorialStep: 0,
 };
 
 function gameReducer(state: AppState, action: AppAction): AppState {
@@ -845,6 +1002,47 @@ function gameReducer(state: AppState, action: AppAction): AppState {
             return { ...state, difficulty: action.payload, gameState: 'characterSelect' };
         case 'RESET_STATE':
             return initialState;
+        case 'START_TUTORIAL': {
+            const idCounter = { current: 0 };
+            const tutorialOpponent: Opponent = { name: 'Kano', health: 100, attack: 10, movesPerAttack: 8, pieceType: 'kano' };
+            const firstStep = TUTORIAL_SCRIPT[0];
+            const board = firstStep.boardKey ? createTutorialBoard(TUTORIAL_BOARDS[firstStep.boardKey], idCounter) : createInitialBoard(idCounter);
+            
+            return {
+                ...initialState,
+                gameState: 'tutorial',
+                tutorialStep: 0,
+                selectedCharacter: 'subzero',
+                opponent: tutorialOpponent,
+                opponentHealth: tutorialOpponent.health,
+                movesUntilAttack: tutorialOpponent.movesPerAttack,
+                board: board,
+                playerBanter: { key: Date.now(), text: "Let's see what you've got." },
+                opponentBanter: { key: Date.now() + 1, text: "I'll break you." }
+            };
+        }
+        case 'ADVANCE_TUTORIAL': {
+            const nextStep = state.tutorialStep + 1;
+            if (nextStep >= TUTORIAL_SCRIPT.length) {
+                return { ...initialState, gameState: 'start' }; // Tutorial finished
+            }
+            
+            const stepScript = TUTORIAL_SCRIPT[nextStep];
+            stepScript.onStepStart?.(action.payload);
+            
+            let newBoard = state.board;
+            if (stepScript.boardKey) {
+                 const idCounter = { current: 0 };
+                 newBoard = createTutorialBoard(TUTORIAL_BOARDS[stepScript.boardKey], idCounter);
+            }
+            
+            return {
+                ...state,
+                tutorialStep: nextStep,
+                board: newBoard,
+                selectedPiece: null,
+            };
+        }
         case 'START_GAME': {
             const { character, ladder, board } = action.payload;
             const firstOpponent = ladder[0];
@@ -894,8 +1092,13 @@ function gameReducer(state: AppState, action: AppAction): AppState {
         case 'DEAL_DAMAGE': {
             const totalDamage = action.payload;
             const newOpponentHealth = Math.max(0, state.opponentHealth - totalDamage);
-            const isWin = newOpponentHealth <= 0;
             
+            // In tutorial, don't end the game
+            if (state.gameState === 'tutorial') {
+                return { ...state, opponentHealth: newOpponentHealth, opponentIsHit: true };
+            }
+            
+            const isWin = newOpponentHealth <= 0;
             let newGameState = state.gameState;
             let newBanter = state.opponentBanter;
 
@@ -915,7 +1118,7 @@ function gameReducer(state: AppState, action: AppAction): AppState {
             };
         }
          case 'PROCESS_OPPONENT_TURN': {
-            if (state.gameState !== 'playing') {
+            if (!['playing', 'tutorial'].includes(state.gameState)) {
                 return { ...state, isProcessing: false };
             }
         
@@ -924,7 +1127,10 @@ function gameReducer(state: AppState, action: AppAction): AppState {
             if (newMovesCounter <= 0) {
                 if (!state.opponent) return { ...state, isProcessing: false }; 
                 
-                const newPlayerHealth = Math.max(0, state.playerHealth - state.opponent.attack);
+                let newPlayerHealth = Math.max(0, state.playerHealth - state.opponent.attack);
+                if (state.gameState === 'tutorial') {
+                    newPlayerHealth = Math.max(1, newPlayerHealth);
+                }
                 const isGameOver = newPlayerHealth <= 0;
         
                 const tauntOptions = LOCAL_BANTER.opponent?.taunt || [];
@@ -1012,6 +1218,8 @@ function gameReducer(state: AppState, action: AppAction): AppState {
             return { ...state, hintCooldown: Math.max(0, state.hintCooldown - 1) };
         case 'SET_KEYBOARD_CURSOR':
             return { ...state, keyboardCursor: action.payload };
+        case 'SET_MOVES_UNTIL_ATTACK':
+            return { ...state, movesUntilAttack: action.payload };
         case 'SET_ABILITY_STATE':
             return { ...state, abilityState: action.payload };
         case 'UPDATE_ABILITY_METER': {
@@ -1077,6 +1285,7 @@ const GamePiece = memo(({ piece, onClick, isSelected, isHinted, isManualHinted, 
             onTouchEnd={handleTouchEnd}
             aria-label={`Piece at row ${piece.row}, column ${piece.col}, type ${piece.type}, special ${piece.special}`}
             aria-pressed={isSelected}
+            data-tutorial-id={`piece-${piece.row}-${piece.col}`}
         >
             <Icon />
         </button>
@@ -1158,15 +1367,17 @@ const CharacterSelectScreen = memo(({ onStartGame }: { onStartGame: (character: 
     <div className="screen-overlay">
         <div className="modal-dialog character-select">
             <h2>Choose Your Fighter</h2>
-            <p className="scroll-hint">Scroll or swipe to see all fighters</p>
+            <p className="scroll-hint">Scroll down to see all fighters</p>
             <div className="fighters-container">
                 {(Object.keys(CHARACTER_DATA) as CharacterName[]).map(charKey => {
                     const char = CHARACTER_DATA[charKey];
                     return (
                        <button key={char.name} className={`fighter-card ${charKey}`} onClick={() => onStartGame(charKey)}>
-                            <h3>{char.name}</h3>
                             <div className={`char-portrait ${charKey}`}></div>
-                            <p>{char.description}</p>
+                            <div className="fighter-details">
+                                <h3>{char.name}</h3>
+                                <p>{char.description}</p>
+                            </div>
                        </button>
                     )
                 })}
@@ -1197,19 +1408,22 @@ const DifficultySelectScreen = memo(({ onSelectDifficulty }: { onSelectDifficult
     </div>
 ));
 
-const StartScreen = memo(({ onStart }: { onStart: () => void; }) => (
+const StartScreen = memo(({ onStart, onStartTutorial }: { onStart: () => void; onStartTutorial: () => void; }) => (
     <div className="screen-overlay">
         <div className="modal-dialog">
             <h1>Kombat Krush</h1>
             <p>A Match-3 Fighting Game.</p>
             <p>Match pieces to damage your opponent. Defeat 5 opponents to win the tournament!</p>
-            <button onClick={onStart}>Start Game</button>
+            <div className="modal-button-group">
+                <button onClick={onStart}>Start Game</button>
+                <button onClick={onStartTutorial} style={{backgroundColor: '#222', borderColor: '#555'}}>Tutorial</button>
+            </div>
         </div>
     </div>
 ));
 
 const PlayerProfile = memo(({ selectedCharacter, playerBanter, playerIsHit }: { selectedCharacter: CharacterName | null, playerBanter: {key: number, text: string} | null, playerIsHit: boolean }) => (
-    <div className="player-info-col">
+    <div className="player-info-col" data-tutorial-id="player-profile">
         <div className="character-header">
             <div key={playerBanter?.key || 'player-banter-static'} className="player-banter-bubble" aria-live="polite">
                 {playerBanter ? `"${playerBanter.text}"` : ''}
@@ -1229,7 +1443,7 @@ const OpponentProfile = memo(({ opponent, opponentBanter, opponentIsHit, movesUn
                 </div>
                 <div className={`opponent-portrait ${opponent.pieceType || ''} ${opponentIsHit ? 'taking-damage' : ''}`}></div>
             </div>
-            <div className="opponent-attack-timer">
+            <div className="opponent-attack-timer" data-tutorial-id="opponent-timer">
                 <div className="attack-timer-label">ATTACK IN</div>
                 <div className="attack-timer-value">{movesUntilAttack}</div>
             </div>
@@ -1275,13 +1489,13 @@ const GameHeader = memo(({
         <div className="health-bars-container">
             <div className="health-bar-wrapper">
                 <div className="health-bar-label">{selectedCharacter}</div>
-                <div className="health-bar-outer">
+                <div className="health-bar-outer" data-tutorial-id="player-health">
                     <div className="health-bar-inner player" style={{width: `${(playerHealth / PLAYER_MAX_HEALTH) * 100}%`}}></div>
                 </div>
             </div>
             <div className="health-bar-wrapper">
                 <div className="health-bar-label">{opponentName}</div>
-                <div className="health-bar-outer">
+                <div className="health-bar-outer" data-tutorial-id="opponent-health">
                     <div className="health-bar-inner opponent" style={{width: `${(opponentHealth / opponentMaxHealth) * 100}%`}}></div>
                 </div>
             </div>
@@ -1289,7 +1503,7 @@ const GameHeader = memo(({
 
         <div className="controls-and-meters">
             {selectedCharacter && (
-                <div className={`ability-container ${selectedCharacter}`}>
+                <div className={`ability-container ${selectedCharacter}`} data-tutorial-id="ability-meter">
                     <div className="ability-tooltip" aria-hidden="true">
                          <strong>{CHARACTER_DATA[selectedCharacter].name} Ability:</strong>
                          <br />
@@ -1298,7 +1512,7 @@ const GameHeader = memo(({
                     <div className="ability-meter-outer">
                         <div className="ability-meter-inner" style={{width: `${(abilityMeter / ABILITY_METER_MAX) * 100}%`}}></div>
                     </div>
-                    <button className={`ability-button ${abilityState}`} onClick={onAbilityClick} disabled={abilityState !== 'ready' && abilityState !== 'aiming' || isProcessing}>
+                    <button className={`ability-button ${abilityState}`} onClick={onAbilityClick} disabled={abilityState !== 'ready' && abilityState !== 'aiming' || isProcessing} data-tutorial-id="ability-button">
                         Ability
                     </button>
                 </div>
@@ -1380,7 +1594,7 @@ const MobileHeader = memo(({ selectedCharacter, playerBanter, playerIsHit, oppon
             <div key={playerBanter?.key || 'player-banter-static'} className="player-banter-bubble" aria-live="polite">
                 {playerBanter ? `"${playerBanter.text}"` : ''}
             </div>
-            <div className={`player-portrait ${selectedCharacter || ''} ${playerIsHit ? 'taking-damage' : ''}`}></div>
+            <div className={`player-portrait ${selectedCharacter || ''} ${playerIsHit ? 'taking-damage' : ''}`} data-tutorial-id="mobile-player-profile"></div>
         </div>
         {opponent && (
             <div className="mobile-profile-item">
@@ -1397,7 +1611,7 @@ const MobileFooter = memo(({ opponent, movesUntilAttack, shuffledLadder, current
     <div className="mobile-footer">
         {opponent && (
             <>
-                <div className="opponent-attack-timer">
+                <div className="opponent-attack-timer" data-tutorial-id="mobile-opponent-timer">
                     <div className="attack-timer-label">ATTACK IN</div>
                     <div className="attack-timer-value">{movesUntilAttack}</div>
                 </div>
@@ -1416,6 +1630,27 @@ const MobileFooter = memo(({ opponent, movesUntilAttack, shuffledLadder, current
     </div>
 ));
 
+const TutorialOverlay = memo(({ step, onNext, onExit }: { step: number; onNext: () => void; onExit: () => void; }) => {
+    const currentStep = TUTORIAL_SCRIPT[step];
+
+    return (
+        <div className="tutorial-overlay-blocker">
+            <div className="tutorial-dialog">
+                <p>{currentStep.text}</p>
+                <div className="modal-button-group">
+                    {currentStep.showNextButton && (
+                         <button onClick={onNext}>
+                            {step === TUTORIAL_SCRIPT.length - 1 ? 'Finish' : 'Next'}
+                        </button>
+                    )}
+                    <button onClick={onExit} className="tutorial-exit-button">Exit Tutorial</button>
+                </div>
+            </div>
+        </div>
+    );
+});
+
+
 // --- BUNDLED FROM: src/App.tsx ---
 
 const App = () => {
@@ -1426,7 +1661,7 @@ const App = () => {
         combo, textPopups, autoHintIds, manualHintIds, isHintOnCooldown, hintCooldown, comboKey,
         isMuted, showToasty, specialEffects, keyboardCursor, selectedCharacter, abilityMeter,
         abilityState, playerBanter, maxCombo,
-        score, showSettingsModal, difficulty
+        score, showSettingsModal, difficulty, tutorialStep
     } = state;
 
     const pieceIdCounter = useRef(0);
@@ -1480,16 +1715,27 @@ const App = () => {
             generatePlayerBanter("highCombo");
         }
     }, [combo, maxCombo, generatePlayerBanter]);
-
+    
     useEffect(() => {
-        document.body.className = `gamestate-${gameState}`;
+        document.body.className = document.body.className.replace(/\bgamestate-[a-zA-Z]+\b/g, '');
+        document.body.className = document.body.className.replace(/\btheme-[a-zA-Z]+\b/g, '');
+        document.body.classList.add(`gamestate-${gameState}`);
+
         if (selectedCharacter) {
             document.body.classList.add(`theme-${selectedCharacter}`);
         }
         if (gameState === 'gameOver') {
             playSoundMuted('gameOver');
         }
-    }, [gameState, selectedCharacter, playSoundMuted]);
+        
+        // Tutorial-specific classes
+        document.body.classList.toggle('tutorial-active', gameState === 'tutorial');
+        document.body.className = document.body.className.replace(/\btutorial-step-\d+\b/g, '');
+        if (gameState === 'tutorial') {
+            document.body.classList.add(`tutorial-step-${tutorialStep}`);
+        }
+
+    }, [gameState, selectedCharacter, playSoundMuted, tutorialStep]);
 
     useEffect(() => {
         if (playerIsHit) {
@@ -1507,13 +1753,13 @@ const App = () => {
     useEffect(() => {
         if (opponentIsHit) {
             playSoundMuted('opponentHit');
-            dispatch({ type: 'OPPONENT_BANTER', payload: { event: 'hit' } });
+            if (gameState === 'playing') dispatch({ type: 'OPPONENT_BANTER', payload: { event: 'hit' } });
             const timer = setTimeout(() => {
                 dispatch({ type: 'SET_OPPONENT_IS_HIT', payload: false });
             }, 400);
             return () => clearTimeout(timer);
         }
-    }, [opponentIsHit, playSoundMuted]);
+    }, [opponentIsHit, playSoundMuted, gameState]);
 
 
     useEffect(() => {
@@ -1555,6 +1801,10 @@ const App = () => {
     const handleGoToMainMenu = () => {
         dispatch({ type: 'RESET_STATE' });
     }
+    
+    const handleStartTutorial = () => {
+        dispatch({ type: 'START_TUTORIAL' });
+    }
 
     const handleNextLevel = useCallback(() => {
         if (currentLadderLevel + 1 < shuffledLadder.length) {
@@ -1566,10 +1816,24 @@ const App = () => {
     }, [currentLadderLevel, shuffledLadder]);
 
     const handlePieceClick = useCallback(async (row: number, col: number) => {
-        if (isProcessing || gameState !== 'playing') return;
+        if (isProcessing || !['playing', 'tutorial'].includes(gameState)) return;
 
         if (hintTimerId.current) clearTimeout(hintTimerId.current);
         dispatch({ type: 'CLEAR_HINTS' });
+        
+        if (gameState === 'tutorial') {
+            const currentStep = TUTORIAL_SCRIPT[tutorialStep];
+            if (!currentStep.requiredAction || (currentStep.requiredAction.type !== 'swap' && currentStep.requiredAction.type !== 'ability_target')) {
+                return;
+            }
+            if (currentStep.requiredAction.type === 'ability_target') {
+                 if (row >= currentStep.requiredAction.row && row <= currentStep.requiredAction.row + 1 && col >= currentStep.requiredAction.col && col <= currentStep.requiredAction.col +1) {
+                    processGameLoop({ state, dispatch, playSoundMuted, pieceIdCounter, popupIdCounter, initialAction: { type: 'ability', row: currentStep.requiredAction.row, col: currentStep.requiredAction.col }})
+                        .then(() => dispatch({ type: 'ADVANCE_TUTORIAL', payload: dispatch }));
+                 }
+                 return;
+            }
+        }
 
         if (abilityState === 'aiming') {
             await processGameLoop({ state, dispatch, playSoundMuted, pieceIdCounter, popupIdCounter, initialAction: { type: 'ability', row, col }});
@@ -1587,10 +1851,26 @@ const App = () => {
             const distance = Math.abs(row - selectedRow) + Math.abs(col - selectedCol);
 
             if (distance === 1) { 
+                if (gameState === 'tutorial') {
+                    const { requiredAction } = TUTORIAL_SCRIPT[tutorialStep];
+                     if (requiredAction?.type === 'swap') {
+                        const isCorrectSwap = (selectedRow === requiredAction.from.row && selectedCol === requiredAction.from.col && row === requiredAction.to.row && col === requiredAction.to.col) ||
+                                              (selectedRow === requiredAction.to.row && selectedCol === requiredAction.to.col && row === requiredAction.from.row && col === requiredAction.from.col);
+                        if (!isCorrectSwap) {
+                           dispatch({ type: 'SELECT_PIECE', payload: { row, col }}); // Select new piece
+                           return;
+                        }
+                    } else { return; }
+                }
+
                 dispatch({ type: 'SELECT_PIECE', payload: null });
                 playSoundMuted('swap');
                 
-                await processGameLoop({ state, dispatch, playSoundMuted, pieceIdCounter, popupIdCounter, initialAction: { type: 'swap', from: selectedPiece, to: { row, col } }});
+                const promise = processGameLoop({ state, dispatch, playSoundMuted, pieceIdCounter, popupIdCounter, initialAction: { type: 'swap', from: selectedPiece, to: { row, col } }});
+                
+                if (gameState === 'tutorial') {
+                    promise.then(() => dispatch({ type: 'ADVANCE_TUTORIAL', payload: dispatch }));
+                }
 
             } else {
                 dispatch({ type: 'SELECT_PIECE', payload: { row, col }});
@@ -1598,7 +1878,7 @@ const App = () => {
         } else {
             dispatch({ type: 'SELECT_PIECE', payload: { row, col }});
         }
-    }, [state, playSoundMuted]);
+    }, [state, playSoundMuted, tutorialStep]);
 
     const handleSwipe = useCallback((row: number, col: number, direction: 'up' | 'down' | 'left' | 'right') => {
         if (isProcessing || gameState !== 'playing' || selectedPiece || abilityState === 'aiming') return;
@@ -1635,6 +1915,21 @@ const App = () => {
 
     const handleAbilityClick = useCallback(async () => {
         if (isProcessing) return;
+        
+        if (gameState === 'tutorial') {
+            const currentStep = TUTORIAL_SCRIPT[tutorialStep];
+            if (currentStep.requiredAction?.type === 'ability') {
+                dispatch({ type: 'ADVANCE_TUTORIAL', payload: dispatch });
+                // For subzero, we enter aiming state. The reducer handles onStepStart.
+                if (selectedCharacter === 'subzero' || selectedCharacter === 'scorpion') {
+                    dispatch({ type: 'SET_ABILITY_STATE', payload: 'aiming' });
+                    return;
+                }
+            } else {
+                return;
+            }
+        }
+
 
         if (abilityState === 'aiming') {
             dispatch({ type: 'SET_ABILITY_STATE', payload: 'ready' });
@@ -1652,7 +1947,7 @@ const App = () => {
         playSoundMuted('ability', { ability: selectedCharacter });
         await processGameLoop({ state, dispatch, playSoundMuted, pieceIdCounter, popupIdCounter, initialAction: { type: 'ability' } });
         
-    }, [state, playSoundMuted, generatePlayerBanter]);
+    }, [state, playSoundMuted, generatePlayerBanter, tutorialStep]);
 
 
     const handleKeyDown = useCallback((e: KeyboardEvent) => {
@@ -1704,6 +1999,7 @@ const App = () => {
     if (gameState === 'start') {
         return <StartScreen 
             onStart={() => dispatch({ type: 'SET_GAME_STATE', payload: 'difficultySelect' })} 
+            onStartTutorial={handleStartTutorial}
         />;
     }
     
@@ -1736,8 +2032,17 @@ const App = () => {
                 onClose={() => dispatch({ type: 'TOGGLE_SETTINGS_MODAL' })}
                 onMainMenu={handleGoToMainMenu}
             />
+            
+            {gameState === 'tutorial' && (
+                <TutorialOverlay
+                    step={tutorialStep}
+                    onNext={() => dispatch({ type: 'ADVANCE_TUTORIAL', payload: dispatch })}
+                    onExit={handleGoToMainMenu}
+                />
+            )}
 
-            <div className="game-ui-wrapper" aria-hidden={!['playing'].includes(gameState)}>
+
+            <div className="game-ui-wrapper" aria-hidden={!['playing', 'tutorial'].includes(gameState)}>
                 <PlayerProfile
                     selectedCharacter={selectedCharacter}
                     playerBanter={playerBanter}
