@@ -84,7 +84,7 @@ type AppAction =
     | { type: 'SET_DIFFICULTY'; payload: Difficulty }
     | { type: 'START_GAME'; payload: { character: CharacterName; ladder: Opponent[]; board: Piece[][]; activePieceTypes: CharacterName[] } }
     | { type: 'START_TUTORIAL' }
-    | { type: 'ADVANCE_TUTORIAL'; payload: Dispatch<AppAction> }
+    | { type: 'ADVANCE_TUTORIAL' }
     | { type: 'NEXT_LEVEL'; payload: { board: Piece[][] } }
     | { type: 'RESET_STATE' }
     | { type: 'SELECT_PIECE'; payload: { row: number; col: number } | null }
@@ -122,7 +122,7 @@ type AppAction =
 // --- BUNDLED FROM: src/constants.tsx ---
 
 const GRID_SIZE = 8;
-const ALL_PIECE_TYPES: CharacterName[] = ['scorpion', 'subzero', 'reptile', 'kano', 'raiden', 'liukang', 'kitana', 'mileena', 'sonya'];
+const ALL_PIECE_TYPES: CharacterName[] = ['scorpion', 'subzero', 'raiden', 'reptile', 'kano', 'liukang', 'kitana', 'mileena', 'sonya'];
 const ANIMATION_DELAY = 150; // ms for each step in the game loop
 const PLAYER_MAX_HEALTH = 100;
 const HINT_DELAY = 5000; // ms before showing a hint
@@ -945,7 +945,6 @@ const processGameLoop = async ({ state, dispatch, playSoundMuted, pieceIdCounter
 
 interface TutorialStep {
     text: string;
-    onStepStart?: (dispatch: Dispatch<AppAction>, popupIdCounter: MutableRefObject<number>) => void;
     boardKey?: keyof typeof TUTORIAL_BOARDS;
 }
 
@@ -1085,11 +1084,6 @@ const TUTORIAL_SCRIPT: TutorialStep[] = [
     {
         text: "The matched pieces are removed, dealing damage to your opponent. Notice their health bar has decreased.",
         boardKey: 'match3_after',
-        onStepStart: (dispatch, popupIdCounter) => {
-             dispatch({ type: 'DEAL_DAMAGE', payload: 10 });
-             dispatch({ type: 'ADD_TEXT_POPUP', payload: { popup: { id: 0, text: `10 DMG!`, row: 3, col: 4, className: 'damage-popup' }, counterRef: popupIdCounter }});
-             setTimeout(() => dispatch({ type: 'REMOVE_TEXT_POPUP' }), 1500);
-        }
     },
     {
         text: "Matching your own character's pieces (Sub-Zero in this tutorial) deals bonus damage.",
@@ -1098,11 +1092,6 @@ const TUTORIAL_SCRIPT: TutorialStep[] = [
     {
         text: "Excellent! Matching your own character pieces is the key to victory.",
         boardKey: 'bonus_after',
-        onStepStart: (dispatch, popupIdCounter) => {
-             dispatch({ type: 'DEAL_DAMAGE', payload: 15 });
-             dispatch({ type: 'ADD_TEXT_POPUP', payload: { popup: { id: 0, text: `15 DMG!`, row: 3, col: 2, className: 'damage-popup' }, counterRef: popupIdCounter }});
-             setTimeout(() => dispatch({ type: 'REMOVE_TEXT_POPUP' }), 1500);
-        }
     },
     {
         text: "Matching 4 pieces is even better! It creates a special piece that can clear an entire row or column.",
@@ -1111,9 +1100,6 @@ const TUTORIAL_SCRIPT: TutorialStep[] = [
     {
         text: "The matched pieces are removed, and a new 'Row Clear' piece is left behind.",
         boardKey: 'match4_after',
-         onStepStart: (dispatch) => {
-             dispatch({ type: 'DEAL_DAMAGE', payload: 12 });
-        }
     },
     {
         text: "Now, if you match that special piece with others of the same kind, it will unleash a powerful effect.",
@@ -1122,33 +1108,18 @@ const TUTORIAL_SCRIPT: TutorialStep[] = [
     {
         text: "BOOM! The special piece cleared the entire row, dealing massive damage.",
         boardKey: 'special_after',
-        onStepStart: (dispatch, popupIdCounter) => {
-             dispatch({ type: 'DEAL_DAMAGE', payload: 30 });
-             dispatch({ type: 'ADD_TEXT_POPUP', payload: { popup: { id: 0, text: `30 DMG!`, row: 1, col: 3, className: 'damage-popup' }, counterRef: popupIdCounter }});
-             setTimeout(() => dispatch({ type: 'REMOVE_TEXT_POPUP' }), 1500);
-        }
     },
     {
         text: "Watch out! The opponent attacks after a set number of your moves. The counter shows they will attack on your next move.",
         boardKey: 'start',
-        onStepStart: (dispatch) => {
-             dispatch({ type: 'SET_MOVES_UNTIL_ATTACK', payload: 1 });
-        },
     },
      {
         text: "Ouch! They attacked you. Keep an eye on the counter and defeat your opponent before they defeat you!",
         boardKey: 'start',
-        onStepStart: (dispatch) => {
-            dispatch({ type: 'SET_PLAYER_HEALTH', payload: PLAYER_MAX_HEALTH - 10 });
-            dispatch({ type: 'SET_PLAYER_IS_HIT', payload: true });
-        },
     },
     {
         text: "Matching pieces also fills your Ability Meter. When it's full, you can use a powerful character-specific move.",
         boardKey: 'start',
-        onStepStart: (dispatch) => {
-             dispatch({ type: 'UPDATE_ABILITY_METER', payload: ABILITY_METER_MAX });
-        }
     },
     {
         text: "Sub-Zero's ability lets you smash a 2x2 area of your choice, destroying all pieces within it.",
@@ -1157,11 +1128,6 @@ const TUTORIAL_SCRIPT: TutorialStep[] = [
     {
         text: "KABOOM! Using your ability can clear many pieces at once and turn the tide of battle.",
         boardKey: 'ability_after',
-        onStepStart: (dispatch, popupIdCounter) => {
-            dispatch({ type: 'DEAL_DAMAGE', payload: 25 });
-            dispatch({ type: 'ADD_TEXT_POPUP', payload: { popup: { id: 0, text: `25 DMG!`, row: 4, col: 4, className: 'damage-popup' }, counterRef: popupIdCounter }});
-             setTimeout(() => dispatch({ type: 'REMOVE_TEXT_POPUP' }), 1500);
-        }
     },
     {
         text: "FATALITY! You have mastered the basics of Kombat Krush. You are ready for a real challenge!",
@@ -1245,11 +1211,6 @@ function gameReducer(state: AppState, action: AppAction): AppState {
             }
             
             const stepScript = TUTORIAL_SCRIPT[nextStep];
-            // We need a ref for the popup counter, but we don't have one here.
-            // For the tutorial, we can pass a dummy ref as it's just for display.
-            const dummyPopupCounter = { current: state.textPopups.length + 1 };
-            stepScript.onStepStart?.(action.payload, dummyPopupCounter);
-            
             let newBoard = state.board;
             if (stepScript.boardKey) {
                  const idCounter = { current: 0 };
@@ -1457,6 +1418,53 @@ function gameReducer(state: AppState, action: AppAction): AppState {
 
 // --- BUNDLED FROM: src/components.tsx ---
 
+const useFocusTrap = (modalRef: React.RefObject<HTMLElement>, isOpen: boolean, onClose: () => void) => {
+    useEffect(() => {
+        if (!isOpen || !modalRef.current) return;
+
+        const focusableElements = modalRef.current.querySelectorAll<HTMLElement>(
+            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusableElements.length === 0) return;
+
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
+        let lastFocusedElement = document.activeElement as HTMLElement;
+
+
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                onClose();
+                return;
+            }
+
+            if (e.key !== 'Tab') return;
+
+            if (e.shiftKey) { // Shift + Tab
+                if (document.activeElement === firstElement) {
+                    e.preventDefault();
+                    lastElement.focus();
+                }
+            } else { // Tab
+                if (document.activeElement === lastElement) {
+                    e.preventDefault();
+                    firstElement.focus();
+                }
+            }
+        };
+
+        firstElement.focus();
+        document.addEventListener('keydown', handleKeyDown);
+
+        return () => {
+            document.removeEventListener('keydown', handleKeyDown);
+            if (lastFocusedElement && typeof lastFocusedElement.focus === 'function') {
+                lastFocusedElement.focus();
+            }
+        };
+    }, [isOpen, modalRef, onClose]);
+};
+
 const GamePiece = memo(({ piece, onClick, isSelected, isHinted, isManualHinted, isCursorOn, onSwipe, isAiming, isAimTarget }: { piece: Piece; onClick: () => void; isSelected: boolean, isHinted: boolean, isManualHinted: boolean, isCursorOn: boolean; onSwipe: (direction: 'up' | 'down' | 'left' | 'right') => void; isAiming: boolean; isAimTarget: boolean; }) => {
     const touchStart = useRef<{ x: number, y: number } | null>(null);
     const SWIPE_SENSITIVITY = 20;
@@ -1525,13 +1533,17 @@ type EndGameModalProps = {
 };
 
 const EndGameModal = memo(({ gameState, opponent, maxCombo, score, onPlayAgain, onMainMenu, onNextLevel }: EndGameModalProps) => {
-    if (!['levelWin', 'ladderComplete', 'gameOver'].includes(gameState)) {
+    const isOpen = ['levelWin', 'ladderComplete', 'gameOver'].includes(gameState);
+    const modalRef = useRef<HTMLDivElement>(null);
+    useFocusTrap(modalRef, isOpen, onMainMenu);
+
+    if (!isOpen) {
         return null;
     }
 
     return (
         <div className="screen-overlay">
-            <div className={`modal-dialog ${gameState}`}>
+            <div ref={modalRef} className={`modal-dialog ${gameState}`}>
                  {gameState === 'ladderComplete' && <h2 className="victory-text perfect-victory-text">FLAWLESS VICTORY</h2>}
                  {gameState === 'levelWin' && <h2 className="victory-text">YOU WIN</h2>}
                  {gameState === 'gameOver' && <h2 className='fatality-text'>GAME OVER</h2>}
@@ -1565,12 +1577,14 @@ const EndGameModal = memo(({ gameState, opponent, maxCombo, score, onPlayAgain, 
 });
 
 const SettingsModal = memo(({ isOpen, onClose, onMainMenu }: { isOpen: boolean; onClose: () => void; onMainMenu: () => void; }) => {
+    const modalRef = useRef<HTMLDivElement>(null);
+    useFocusTrap(modalRef, isOpen, onClose);
     if (!isOpen) {
         return null;
     }
     return (
         <div className="screen-overlay">
-            <div className="modal-dialog">
+            <div ref={modalRef} className="modal-dialog">
                 <h2>Settings</h2>
                 <div className="settings-modal-buttons">
                     <button onClick={onMainMenu}>
@@ -1586,21 +1600,60 @@ const SettingsModal = memo(({ isOpen, onClose, onMainMenu }: { isOpen: boolean; 
 });
 
 const CharacterSelectScreen = memo(({ onStartGame }: { onStartGame: (character: CharacterName) => void }) => {
-    const shuffledCharacters = React.useMemo(() =>
-        (Object.keys(CHARACTER_DATA) as CharacterName[]).sort(() => 0.5 - Math.random()),
-        []
-    );
+    const orderedCharacters = ALL_PIECE_TYPES;
+    const [focusedIndex, setFocusedIndex] = React.useState(-1);
+    const modalRef = useRef<HTMLDivElement>(null);
+    const fightersContainerRef = useRef<HTMLDivElement>(null);
+
+    useFocusTrap(modalRef, true, () => {}); // No default close action
+    
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (!['ArrowDown', 'ArrowUp', 'Enter', ' '].includes(e.key)) return;
+            e.preventDefault();
+
+            let newIndex = focusedIndex;
+            if (e.key === 'ArrowDown') {
+                newIndex = focusedIndex >= orderedCharacters.length - 1 ? 0 : focusedIndex + 1;
+            } else if (e.key === 'ArrowUp') {
+                newIndex = focusedIndex <= 0 ? orderedCharacters.length - 1 : focusedIndex - 1;
+            } else if (e.key === 'Enter' || e.key === ' ') {
+                if (focusedIndex !== -1) {
+                    onStartGame(orderedCharacters[focusedIndex]);
+                }
+                return;
+            }
+            setFocusedIndex(newIndex);
+        };
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, [focusedIndex, orderedCharacters, onStartGame]);
+    
+    useEffect(() => {
+        if (focusedIndex !== -1 && fightersContainerRef.current) {
+            const focusedButton = fightersContainerRef.current.children[focusedIndex] as HTMLElement;
+            if (focusedButton) {
+                focusedButton.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                focusedButton.focus();
+            }
+        }
+    }, [focusedIndex]);
 
     return (
         <div className="screen-overlay">
-            <div className="modal-dialog character-select">
+            <div ref={modalRef} className="modal-dialog character-select">
                 <h2>Choose Your Fighter</h2>
-                <p className="scroll-hint">Scroll down to see all fighters</p>
-                <div className="fighters-container">
-                    {shuffledCharacters.map(charKey => {
+                <p className="scroll-hint">Scroll down or use arrow keys</p>
+                <div ref={fightersContainerRef} className="fighters-container">
+                    {orderedCharacters.map((charKey, index) => {
                         const char = CHARACTER_DATA[charKey];
                         return (
-                           <button key={char.name} className={`fighter-card ${charKey}`} onClick={() => onStartGame(charKey)}>
+                           <button 
+                                key={char.name} 
+                                className={`fighter-card ${charKey}`} 
+                                onClick={() => onStartGame(charKey)}
+                                onFocus={() => setFocusedIndex(index)}
+                            >
                                 <div className={`char-portrait ${charKey}`}></div>
                                 <div className="fighter-details">
                                     <h3>{char.name}</h3>
@@ -1615,37 +1668,113 @@ const CharacterSelectScreen = memo(({ onStartGame }: { onStartGame: (character: 
     );
 });
 
-const DifficultySelectScreen = memo(({ onSelectDifficulty }: { onSelectDifficulty: (difficulty: Difficulty) => void }) => (
-    <div className="screen-overlay">
-        <div className="modal-dialog">
-            <h2>Choose Your Destiny</h2>
-            <div className="difficulty-buttons">
-                <button onClick={() => onSelectDifficulty('easy')}>
-                    <h3>Easy</h3>
-                    <p>A gentler challenge. Opponents are weaker and attack less often.</p>
-                </button>
-                <button onClick={() => onSelectDifficulty('normal')}>
-                    <h3>Normal</h3>
-                    <p>The intended Kombat Krush experience.</p>
-                </button>
-                <button onClick={() => onSelectDifficulty('hard')}>
-                    <h3>Hard</h3>
-                    <p>For seasoned warriors. Opponents are stronger and more aggressive.</p>
-                </button>
+const DifficultySelectScreen = memo(({ onSelectDifficulty }: { onSelectDifficulty: (difficulty: Difficulty) => void }) => {
+    const difficulties: Difficulty[] = ['easy', 'normal', 'hard'];
+    const modalRef = useRef<HTMLDivElement>(null);
+    const [focusedIndex, setFocusedIndex] = React.useState(-1);
+    
+    useFocusTrap(modalRef, true, () => {});
+    
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (!['ArrowDown', 'ArrowUp', 'Enter', ' '].includes(e.key)) return;
+            e.preventDefault();
+
+            let newIndex = focusedIndex;
+            if (e.key === 'ArrowDown') {
+                 newIndex = focusedIndex >= difficulties.length - 1 ? 0 : focusedIndex + 1;
+            } else if (e.key === 'ArrowUp') {
+                 newIndex = focusedIndex <= 0 ? difficulties.length - 1 : focusedIndex - 1;
+            } else if (e.key === 'Enter' || e.key === ' ') {
+                if (focusedIndex !== -1) {
+                    onSelectDifficulty(difficulties[focusedIndex]);
+                }
+                return;
+            }
+            setFocusedIndex(newIndex);
+        };
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, [focusedIndex, difficulties, onSelectDifficulty]);
+    
+    useEffect(() => {
+        if (focusedIndex !== -1 && modalRef.current) {
+            const buttonContainer = modalRef.current.querySelector('.difficulty-buttons');
+            if(buttonContainer) {
+                (buttonContainer.children[focusedIndex] as HTMLElement)?.focus();
+            }
+        }
+    }, [focusedIndex]);
+    
+    return (
+        <div className="screen-overlay">
+            <div ref={modalRef} className="modal-dialog">
+                <h2>Choose Your Destiny</h2>
+                <div className="difficulty-buttons">
+                    <button onClick={() => onSelectDifficulty('easy')} onFocus={() => setFocusedIndex(0)}>
+                        <h3>Easy</h3>
+                        <p>A gentler challenge. Opponents are weaker and attack less often.</p>
+                    </button>
+                    <button onClick={() => onSelectDifficulty('normal')} onFocus={() => setFocusedIndex(1)}>
+                        <h3>Normal</h3>
+                        <p>The intended Kombat Krush experience.</p>
+                    </button>
+                    <button onClick={() => onSelectDifficulty('hard')} onFocus={() => setFocusedIndex(2)}>
+                        <h3>Hard</h3>
+                        <p>For seasoned warriors. Opponents are stronger and more aggressive.</p>
+                    </button>
+                </div>
             </div>
         </div>
-    </div>
-));
+    )
+});
 
-const StartScreen = memo(({ onStart, onStartTutorial }: { onStart: () => void; onStartTutorial: () => void; }) => (
+const StartScreen = memo(({ onStart, onStartTutorial }: { onStart: () => void; onStartTutorial: () => void; }) => {
+    const modalRef = useRef<HTMLDivElement>(null);
+    useFocusTrap(modalRef, true, () => {}); // No close action
+    
+    const [focusedIndex, setFocusedIndex] = React.useState(-1);
+    const actions = [onStart, onStartTutorial];
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (!['ArrowDown', 'ArrowUp', 'Enter', ' '].includes(e.key)) return;
+            e.preventDefault();
+
+            let newIndex = focusedIndex < 0 ? 0 : focusedIndex;
+            if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                newIndex = (newIndex + 1) % 2;
+            } else if (e.key === 'Enter' || e.key === ' ') {
+                 if (focusedIndex !== -1) {
+                    actions[focusedIndex]();
+                }
+                return;
+            }
+            setFocusedIndex(newIndex);
+        };
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, [focusedIndex, actions]);
+    
+     useEffect(() => {
+        if (focusedIndex !== -1 && modalRef.current) {
+            const buttonContainer = modalRef.current.querySelector('.modal-button-group');
+            if(buttonContainer) {
+                (buttonContainer.children[focusedIndex] as HTMLElement)?.focus();
+            }
+        }
+    }, [focusedIndex]);
+
+
+    return (
     <div className="screen-overlay">
-        <div className="modal-dialog">
+        <div ref={modalRef} className="modal-dialog">
             <h1>Kombat Krush</h1>
             <p>A Match-3 Fighting Game.</p>
             <p>Match pieces to damage your opponent. Defeat 5 opponents to win the tournament!</p>
             <div className="modal-button-group">
-                <button onClick={onStart}>Start Game</button>
-                <button onClick={onStartTutorial} style={{backgroundColor: '#222', borderColor: '#555'}}>Tutorial</button>
+                <button onClick={onStart} onFocus={() => setFocusedIndex(0)}>Start Game</button>
+                <button onClick={onStartTutorial} style={{backgroundColor: '#222', borderColor: '#555'}} onFocus={() => setFocusedIndex(1)}>Tutorial</button>
             </div>
             <footer>
                 <p className="legal-disclaimer">
@@ -1654,7 +1783,8 @@ const StartScreen = memo(({ onStart, onStartTutorial }: { onStart: () => void; o
             </footer>
         </div>
     </div>
-));
+    )
+});
 
 const PlayerProfile = memo(({ selectedCharacter, playerBanter, playerIsHit }: { selectedCharacter: CharacterName | null, playerBanter: {key: number, text: string} | null, playerIsHit: boolean }) => (
     <div className="player-info-col" data-tutorial-id="player-profile">
@@ -1869,10 +1999,12 @@ const MobileFooter = memo(({ opponent, shuffledLadder, currentLadderLevel }: { o
 
 const TutorialOverlay = memo(({ step, onNext, onExit }: { step: number; onNext: () => void; onExit: () => void; }) => {
     const currentStep = TUTORIAL_SCRIPT[step];
+    const modalRef = useRef<HTMLDivElement>(null);
+    useFocusTrap(modalRef, true, onExit);
 
     return (
         <div className="tutorial-overlay-blocker">
-            <div className="tutorial-dialog">
+            <div ref={modalRef} className="tutorial-dialog">
                 <p>{currentStep.text}</p>
                 <div className="modal-button-group">
                     <button onClick={onNext}>
@@ -2020,6 +2152,53 @@ const App = () => {
         }
     }, [hintCooldown, isHintOnCooldown]);
     
+    // Tutorial side effects
+    useEffect(() => {
+        if (gameState !== 'tutorial') return;
+
+        const runSideEffect = () => {
+             switch (tutorialStep) {
+                case 2: // match3_after
+                    dispatch({ type: 'DEAL_DAMAGE', payload: 10 });
+                    dispatch({ type: 'ADD_TEXT_POPUP', payload: { popup: { id: 0, text: `10 DMG!`, row: 3, col: 4, className: 'damage-popup' }, counterRef: popupIdCounter }});
+                    setTimeout(() => dispatch({ type: 'REMOVE_TEXT_POPUP' }), 1500);
+                    break;
+                case 4: // bonus_after
+                    dispatch({ type: 'DEAL_DAMAGE', payload: 15 });
+                    dispatch({ type: 'ADD_TEXT_POPUP', payload: { popup: { id: 0, text: `15 DMG!`, row: 3, col: 2, className: 'damage-popup' }, counterRef: popupIdCounter }});
+                    setTimeout(() => dispatch({ type: 'REMOVE_TEXT_POPUP' }), 1500);
+                    break;
+                case 6: // match4_after
+                    dispatch({ type: 'DEAL_DAMAGE', payload: 12 });
+                    break;
+                case 8: // special_after
+                    dispatch({ type: 'DEAL_DAMAGE', payload: 30 });
+                    dispatch({ type: 'ADD_TEXT_POPUP', payload: { popup: { id: 0, text: `30 DMG!`, row: 1, col: 3, className: 'damage-popup' }, counterRef: popupIdCounter }});
+                    setTimeout(() => dispatch({ type: 'REMOVE_TEXT_POPUP' }), 1500);
+                    break;
+                case 9: // Opponent attacks next
+                    dispatch({ type: 'SET_MOVES_UNTIL_ATTACK', payload: 1 });
+                    break;
+                case 10: // Ouch!
+                    dispatch({ type: 'SET_PLAYER_HEALTH', payload: PLAYER_MAX_HEALTH - 10 });
+                    dispatch({ type: 'SET_PLAYER_IS_HIT', payload: true });
+                    break;
+                case 11: // Ability meter full
+                    dispatch({ type: 'UPDATE_ABILITY_METER', payload: ABILITY_METER_MAX });
+                    break;
+                case 13: // KABOOM!
+                    dispatch({ type: 'DEAL_DAMAGE', payload: 25 });
+                    dispatch({ type: 'ADD_TEXT_POPUP', payload: { popup: { id: 0, text: `25 DMG!`, row: 4, col: 4, className: 'damage-popup' }, counterRef: popupIdCounter }});
+                    setTimeout(() => dispatch({ type: 'REMOVE_TEXT_POPUP' }), 1500);
+                    break;
+            }
+        };
+        // Delay side-effects slightly to allow board transitions to finish
+        const timer = setTimeout(runSideEffect, 200);
+        return () => clearTimeout(timer);
+
+    }, [gameState, tutorialStep]);
+
     const startGame = useCallback((character: CharacterName) => {
         if (!difficulty) return;
         const modifiedLadder = getModifiedLadder(difficulty);
@@ -2230,7 +2409,7 @@ const App = () => {
             {gameState === 'tutorial' && (
                 <TutorialOverlay
                     step={tutorialStep}
-                    onNext={() => dispatch({ type: 'ADVANCE_TUTORIAL', payload: dispatch })}
+                    onNext={() => dispatch({ type: 'ADVANCE_TUTORIAL' })}
                     onExit={handleGoToMainMenu}
                 />
             )}
